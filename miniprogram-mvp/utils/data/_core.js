@@ -978,6 +978,7 @@ function filterStaffProxyListingViews(items, options) {
   options = options || {}
   var pool = options.pool || "all"
   var status = options.status || "all"
+  var activeType = options.activeType || "全部"
   var keyword = String(options.keyword || "").trim().toLowerCase()
   return (items || []).filter(function(item) {
     if (pool === "resource" && item.isDemandListing) {
@@ -988,6 +989,15 @@ function filterStaffProxyListingViews(items, options) {
     }
     if (status !== "all" && item.proxyStatusKey !== status) {
       return false
+    }
+    if (activeType !== "全部") {
+      var itemType = C.normalizeResourceType(item.type)
+      if (C.resourceTypeOptions.indexOf(itemType) === -1) {
+        itemType = C.normalizeDemandType(item.type)
+      }
+      if (itemType !== activeType) {
+        return false
+      }
     }
     if (keyword) {
       if (idFactory.looksLikeTradeIdKeyword(keyword)) {
@@ -1078,8 +1088,12 @@ function resolveListingPublisherCertLevel(listing) {
   if (!listing) {
     return ""
   }
-  if (isStaffProxyListing(listing)) {
-    return getApprovedCertLevelForPhone(getListingOwnerPhoneForCert(listing))
+  var phone = getListingOwnerPhoneForCert(listing)
+  if (phone) {
+    var liveLevel = getApprovedCertLevelForPhone(phone)
+    if (liveLevel) {
+      return liveLevel
+    }
   }
   return listing.publisherCertLevel || ""
 }
@@ -7416,7 +7430,21 @@ function sortItems(items, sortBy) {
 }
 
 function filterItems(items, options) {
-  return matching.filterItems(items, options)
+  options = options || {}
+  var prepared = items
+  if (options.activeCert === "license") {
+    prepared = (items || []).map(function(item) {
+      if (!item) {
+        return item
+      }
+      var level = resolveListingPublisherCertLevel(item)
+      if (level === item.publisherCertLevel) {
+        return item
+      }
+      return Object.assign({}, item, { publisherCertLevel: level })
+    })
+  }
+  return matching.filterItems(prepared, options)
 }
 
 function connectInvolvesProxyListing(record, target, source) {
@@ -8753,10 +8781,10 @@ function promptBusinessCertification(options) {
   var content = isListingGate
     ? getListingCertGateContent(listingType, pending)
     : (pending
-      ? "平台将在 1-3 个工作日内完成审核，通过后即可" + actionLabel + "。你也可以先填写下方表单。"
-      : "首次" + actionLabel + "须先完成企业认证（约 1-3 个工作日审核）。你可以先去认证，或先填写表单，认证通过后再提交。")
+      ? "平台将在 1-3 个工作日内完成审核，通过后即可" + actionLabel + "。"
+      : "首次" + actionLabel + "须先完成企业认证（约 1-3 个工作日审核）。请先完成认证后再继续。")
   var cancelText = hasRedirect
-    ? (pending ? "知道了" : (isListingGate ? "稍后再说" : "先填表单"))
+    ? (pending ? "知道了" : "稍后再说")
     : "取消"
   wx.showModal({
     title: title,
@@ -8777,8 +8805,6 @@ function promptBusinessCertification(options) {
             url: getCertifyPageUrl(options.redirect)
           })
         }
-      } else if (hasRedirect && !pending && options.redirect && !isListingGate) {
-        wx.navigateTo({ url: options.redirect })
       }
       if (typeof options.onDismiss === "function") {
         options.onDismiss(res)
@@ -9555,6 +9581,63 @@ function buildPoolSummaryLine(item, maxLen) {
     return text.slice(0, maxLen) + "..."
   }
   return text
+}
+
+function buildListingPublicCopyText(item, isResource, options) {
+  options = options || {}
+  if (!item) {
+    return ""
+  }
+  var listingId = options.listingId || item.id || ""
+  var layout = buildListingViewLayout(item, isResource, {
+    includePublisherSpecFields: false,
+    forDetail: true
+  })
+  var lines = []
+  var sideLabel = isResource ? "资源" : "需求"
+  var headline = "【" + sideLabel + "】" + (item.type || "商机")
+  if (item.title) {
+    headline += " · " + item.title
+  }
+  lines.push(headline)
+  if (listingId) {
+    lines.push("编号：" + listingId)
+  }
+  if (layout.poolFacts && layout.poolFacts.length) {
+    layout.poolFacts.forEach(function(fact) {
+      if (!fact || !fact.text) {
+        return
+      }
+      lines.push((fact.label || "") + (fact.label ? "：" : "") + fact.text)
+    })
+  } else if (layout.keyMetrics && layout.keyMetrics.length) {
+    layout.keyMetrics.forEach(function(metric) {
+      if (metric && metric.label && metric.value) {
+        lines.push(metric.label + "：" + metric.value)
+      }
+    })
+  }
+  if (layout.displayTags && layout.displayTags.length) {
+    lines.push("标签：" + layout.displayTags.join("、"))
+  }
+  if (layout.heroSummary) {
+    lines.push(layout.heroSummary)
+  }
+  var specRows = listingSanitize.filterPublisherSensitiveDetailRows(layout.specRows || [])
+  specRows.forEach(function(row) {
+    if (!row || !row.value) {
+      return
+    }
+    var value = row.deliveryKindTag
+      ? (row.deliveryKindTag + (row.value ? " " + row.value : ""))
+      : row.value
+    lines.push(row.label + "：" + value)
+  })
+  var poolTimeLabel = fmt.formatBeijingDateTime(resolveListingDisplayTime(item))
+  if (poolTimeLabel) {
+    lines.push("发布时间：" + poolTimeLabel)
+  }
+  return lines.join("\n").trim()
 }
 
 function buildPoolTimeLabel(item) {
@@ -11998,6 +12081,7 @@ module.exports = {
   isPlatformAdminUser,
   getListingInfoGrid,
   buildListingViewLayout,
+  buildListingPublicCopyText,
   buildListingKeyMetrics,
   getServerDeliveryKind,
   parseServerDeliveryTime,

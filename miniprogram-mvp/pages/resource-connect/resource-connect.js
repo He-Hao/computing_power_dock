@@ -203,6 +203,21 @@ Page({
       }
     }
 
+    if (data.isUserRegistered() && !data.canSubmitListing()) {
+      if (!data.ensureConnectAccess({
+        redirect: this.buildPageRedirect(options),
+        onDismiss: function() {
+          wx.navigateBack({
+            fail: function() {
+              wx.switchTab({ url: "/pages/resources/resources" })
+            }
+          })
+        }
+      })) {
+        return
+      }
+    }
+
     var pageState = this.buildPageState(options)
     this.setData(pageState)
 

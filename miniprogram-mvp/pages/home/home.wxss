@@ -85,10 +85,10 @@ page {
 
 /* ===== Hero ===== */
 .home-hero {
-  flex: 1.15 1 0;
+  flex: 1.55 1 0;
   background: linear-gradient(180deg, #f8fbfa 0%, #ffffff 100%);
-  padding-top: 8rpx;
-  padding-bottom: 12rpx;
+  padding-top: 12rpx;
+  padding-bottom: 16rpx;
 }
 
 .home-hero-brand {
@@ -133,8 +133,7 @@ page {
 
 .home-brand-desc-box {
   margin-top: 16rpx;
-  padding: 16rpx 16rpx;
-  min-height: 128rpx;
+  padding: 18rpx 16rpx;
   border-radius: 12rpx;
   background: #f0f2f5;
 }
@@ -168,8 +167,8 @@ page {
   display: flex;
   align-items: center;
   gap: 12rpx;
-  min-height: 96rpx;
-  padding: 16rpx 14rpx;
+  min-height: 112rpx;
+  padding: 18rpx 14rpx;
   border-radius: 12rpx;
   background: #ffffff;
   border: 2rpx solid #e8ecf0;
@@ -252,22 +251,22 @@ page {
 
 /* ===== 怎么用 ===== */
 .home-guide-card {
-  flex: 1.2 1 0;
+  flex: 0.85 1 0;
   display: flex;
   flex-direction: column;
-  padding: 16rpx 16rpx 18rpx;
+  padding: 12rpx 16rpx 14rpx;
 }
 
 .home-guide-card .home-section-head {
-  margin-bottom: 8rpx;
+  margin-bottom: 6rpx;
 }
 
 .home-guide-track {
   flex: 1;
   display: flex;
   align-items: center;
-  min-height: 168rpx;
-  padding: 16rpx 8rpx;
+  min-height: 120rpx;
+  padding: 10rpx 8rpx;
   border-radius: 12rpx;
   background: #f5f7fa;
 }
@@ -280,7 +279,7 @@ page {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 8rpx 4rpx;
+  padding: 4rpx 4rpx;
   text-align: center;
 }
 
@@ -290,11 +289,11 @@ page {
   justify-content: center;
   box-sizing: border-box;
   flex-shrink: 0;
-  min-width: 80rpx;
-  height: 40rpx;
-  padding: 0 10rpx;
+  min-width: 72rpx;
+  height: 36rpx;
+  padding: 0 8rpx;
   border-radius: 10rpx;
-  margin-bottom: 6rpx;
+  margin-bottom: 4rpx;
   overflow: visible;
 }
 
@@ -344,15 +343,15 @@ page {
 }
 
 .home-guide-num {
-  width: 28rpx;
-  height: 28rpx;
+  width: 26rpx;
+  height: 26rpx;
   border-radius: 50%;
-  margin-bottom: 6rpx;
+  margin-bottom: 4rpx;
   background: #ffffff;
   color: #176b5b;
-  font-size: 20rpx;
+  font-size: 18rpx;
   font-weight: 800;
-  line-height: 28rpx;
+  line-height: 26rpx;
   text-align: center;
 }
 
@@ -402,9 +401,9 @@ page {
 
 /* ===== 底部免责 ===== */
 .home-notice-zone {
-  flex: 0.95 1 0;
-  min-height: 148rpx;
-  padding: 18rpx 16rpx 20rpx;
+  flex: 0.65 1 0;
+  min-height: 108rpx;
+  padding: 12rpx 16rpx 14rpx;
   background: #fff8ef;
   border: 2rpx solid #f5d9a8;
 }
@@ -413,7 +412,7 @@ page {
   display: flex;
   align-items: center;
   gap: 8rpx;
-  margin-bottom: 10rpx;
+  margin-bottom: 6rpx;
 }
 
 .home-notice-icon {

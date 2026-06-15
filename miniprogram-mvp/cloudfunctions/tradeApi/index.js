@@ -1673,6 +1673,87 @@ function normalizeListingFilters(raw) {
   }
 }
 
+var LISTING_TYPE_OPTIONS = [
+  "算力整机", "硬件配件", "算力租赁", "运维维保", "机房建设", "托管运营", "资金支持", "综合资源"
+]
+var LEGACY_RESOURCE_TYPE_ALIAS = {
+  "服务器整机": "算力整机",
+  "整机": "算力整机",
+  "整机销售": "算力整机",
+  "配件": "硬件配件",
+  "配件供应": "硬件配件",
+  "租赁": "算力租赁",
+  "GPU 算力": "算力租赁",
+  "GPU算力": "算力租赁",
+  "国产算力": "算力租赁",
+  "租赁算力": "算力租赁",
+  "IDC 机柜": "算力租赁",
+  "IDC托管": "算力租赁",
+  "维保": "运维维保",
+  "代运营": "托管运营",
+  "数据中心运营": "托管运营",
+  "其他": "综合资源",
+  "其他资源": "综合资源",
+  "资金": "资金支持",
+  "融资": "资金支持"
+}
+var LEGACY_DEMAND_TYPE_ALIAS = {
+  "服务器整机": "算力整机",
+  "整机": "算力整机",
+  "配件": "硬件配件",
+  "配件供应": "硬件配件",
+  "训练算力": "算力租赁",
+  "推理部署": "算力租赁",
+  "IDC 托管": "算力租赁",
+  "IDC托管": "算力租赁",
+  "代理合作": "综合资源",
+  "租赁": "算力租赁",
+  "GPU 算力": "算力租赁",
+  "GPU算力": "算力租赁",
+  "国产算力": "算力租赁",
+  "租赁算力": "算力租赁",
+  "IDC 机柜": "算力租赁",
+  "维保": "运维维保",
+  "代运营": "托管运营",
+  "数据中心运营": "托管运营",
+  "其他": "综合资源",
+  "其他资源": "综合资源",
+  "资金": "资金支持",
+  "融资": "资金支持"
+}
+
+function normalizeListingType(type) {
+  if (!type) {
+    return type
+  }
+  var value = String(type).trim()
+  if (LEGACY_RESOURCE_TYPE_ALIAS[value] !== undefined) {
+    return LEGACY_RESOURCE_TYPE_ALIAS[value]
+  }
+  if (LEGACY_DEMAND_TYPE_ALIAS[value] !== undefined) {
+    return LEGACY_DEMAND_TYPE_ALIAS[value]
+  }
+  if (LISTING_TYPE_OPTIONS.indexOf(value) > -1) {
+    return value
+  }
+  return value
+}
+
+function getListingTypeFilterValues(canonicalType) {
+  var values = [canonicalType]
+  Object.keys(LEGACY_RESOURCE_TYPE_ALIAS).forEach(function(key) {
+    if (LEGACY_RESOURCE_TYPE_ALIAS[key] === canonicalType && values.indexOf(key) === -1) {
+      values.push(key)
+    }
+  })
+  Object.keys(LEGACY_DEMAND_TYPE_ALIAS).forEach(function(key) {
+    if (LEGACY_DEMAND_TYPE_ALIAS[key] === canonicalType && values.indexOf(key) === -1) {
+      values.push(key)
+    }
+  })
+  return values
+}
+
 function hasActiveListingFilters(filters) {
   if (!filters) {
     return false
@@ -1806,7 +1887,8 @@ function listingKeywordMatchedCloud(item, keyword) {
   return haystack.indexOf(text.toLowerCase()) > -1
 }
 
-function listingMatchesServerFilters(item, pool, filters) {
+function listingMatchesServerFilters(item, pool, filters, matchOptions) {
+  matchOptions = matchOptions || {}
   if (!listingBelongsToPool(item, pool)) {
     return false
   }
@@ -1816,14 +1898,19 @@ function listingMatchesServerFilters(item, pool, filters) {
   if (!filters) {
     return true
   }
-  if (filters.activeType && filters.activeType !== "全部" && item.type !== filters.activeType) {
+  if (filters.activeType && filters.activeType !== "全部" && normalizeListingType(item.type) !== filters.activeType) {
     return false
   }
   if (!listingRegionMatched(item.region, filters.activeRegion)) {
     return false
   }
-  if (filters.activeCert === "license" && item.publisherCertLevel !== "license") {
-    return false
+  if (filters.activeCert === "license") {
+    var certLevel = matchOptions.resolvedCertLevel !== undefined && matchOptions.resolvedCertLevel !== null
+      ? matchOptions.resolvedCertLevel
+      : item.publisherCertLevel
+    if (certLevel !== "license") {
+      return false
+    }
   }
   var cutoff = getPublishedAtCutoff(filters.activeTime)
   if (cutoff) {
@@ -1877,7 +1964,7 @@ function buildListingDbWhere(filters) {
     { verification: _.neq("待审核") }
   ]
   if (filters.activeType && filters.activeType !== "全部") {
-    conditions.push({ type: filters.activeType })
+    conditions.push({ type: _.in(getListingTypeFilterValues(filters.activeType)) })
   }
   if (filters.activeRegion && filters.activeRegion !== "全部") {
     if (filters.activeRegion === "华中") {
@@ -1885,9 +1972,6 @@ function buildListingDbWhere(filters) {
     } else {
       conditions.push({ region: filters.activeRegion })
     }
-  }
-  if (filters.activeCert === "license") {
-    conditions.push({ publisherCertLevel: "license" })
   }
   var cutoff = getPublishedAtCutoff(filters.activeTime)
   if (cutoff) {
@@ -1971,7 +2055,13 @@ async function collectVisibleListings(pool, filters, openid, targetCount) {
     }
     for (var i = 0; i < batch.length; i += 1) {
       var item = batch[i]
-      if (!listingMatchesServerFilters(item, pool, filters)) {
+      var matchOptions = {}
+      if (filters.activeCert === "license") {
+        var ownerPhone = item.actualOwnerPhone || item.ownerPhone || item.phone || ""
+        var certFields = await resolvePublisherCertFieldsForPhone(ownerPhone)
+        matchOptions.resolvedCertLevel = certFields.publisherCertLevel || item.publisherCertLevel || ""
+      }
+      if (!listingMatchesServerFilters(item, pool, filters, matchOptions)) {
         continue
       }
       if (await shouldExcludeListingForViewer(item, viewer)) {

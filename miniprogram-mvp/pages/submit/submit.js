@@ -512,6 +512,28 @@ Page({
       })) {
         return
       }
+    } else if (options.mode !== "proxy" && data.isUserRegistered() && !data.canSubmitListing()) {
+      var certRedirect = this.buildSubmitRedirect(options)
+      var dismissBack = function() {
+        wx.navigateBack({
+          fail: function() {
+            wx.switchTab({ url: "/pages/home/home" })
+          }
+        })
+      }
+      if (type === "match") {
+        if (!data.ensureMatchAccess({ redirect: certRedirect, onDismiss: dismissBack })) {
+          return
+        }
+      } else if (type === "connect") {
+        var connectDirection = options.direction || "demand_to_resource"
+        var ensureAccess = connectDirection === "resource_to_demand"
+          ? data.ensureMatchAccess.bind(data)
+          : data.ensureConnectAccess.bind(data)
+        if (!ensureAccess({ redirect: certRedirect, onDismiss: dismissBack })) {
+          return
+        }
+      }
     }
 
     if (type === "connect" && options.mode !== "proxy") {

@@ -49,6 +49,22 @@
     <scroll-view scroll-x class="filter-scroll proxy-filter-row" enhanced show-scrollbar="{{false}}">
       <view class="filter-scroll-inner">
         <view
+          class="filter-chip {{activeType === '全部' ? 'active' : ''}}"
+          bindtap="setTypeFilter"
+          data-type="全部"
+        >全部</view>
+        <view
+          class="filter-chip {{activeType === item.value ? 'active' : ''}}"
+          wx:for="{{typeFilterChips}}"
+          wx:key="value"
+          bindtap="setTypeFilter"
+          data-type="{{item.value}}"
+        >{{item.label}}</view>
+      </view>
+    </scroll-view>
+    <scroll-view scroll-x class="filter-scroll proxy-filter-row" enhanced show-scrollbar="{{false}}">
+      <view class="filter-scroll-inner">
+        <view
           class="filter-chip {{activeStatus === item.value ? 'active' : ''}}"
           wx:for="{{statusFilters}}"
           wx:key="value"

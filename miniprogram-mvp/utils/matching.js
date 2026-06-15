@@ -94,12 +94,19 @@ function timeRangeMatched(publishedAt, activeTime) {
   return true
 }
 
+function resolveItemPublisherCertLevel(item) {
+  if (!item) {
+    return ""
+  }
+  return item.publisherCertLevel || ""
+}
+
 function certFilterMatched(item, activeCert) {
   if (!activeCert || activeCert === "all") {
     return true
   }
   if (activeCert === "license") {
-    return item.publisherCertLevel === "license"
+    return resolveItemPublisherCertLevel(item) === "license"
   }
   return true
 }

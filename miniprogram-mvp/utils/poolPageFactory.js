@@ -323,7 +323,8 @@ function createPoolPage(config) {
         || (data.isCloudEnabled() && data.isPublicListingsServerFiltered(pool))
       var fullItems
       if (useServerFiltered) {
-        fullItems = config.prepareListForView(data, config.getAllItems(data))
+        var serverFiltered = data.filterItems(config.getAllItems(data), this.buildServerFilterOptions())
+        fullItems = config.prepareListForView(data, serverFiltered)
         if (this.data.activeFavorite === "favorite") {
           fullItems = data.filterItems(fullItems, {
             activeFavorite: "favorite",

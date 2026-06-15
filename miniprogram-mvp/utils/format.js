@@ -88,6 +88,28 @@ function formatRelativeTime(timeStr) {
   return timeStr.slice(0, 10)
 }
 
+/** 将时间戳格式化为北京时间（东八区） */
+function formatBeijingDateTime(value) {
+  if (!value) {
+    return ""
+  }
+  var str = String(value).trim()
+  if (isDateOnlyString(str)) {
+    return str
+  }
+  var parsed = Date.parse(str)
+  if (isNaN(parsed)) {
+    parsed = parseDateTime(str)
+  }
+  if (isNaN(parsed)) {
+    return str
+  }
+  var offsetMs = parsed + 8 * 60 * 60 * 1000
+  var date = new Date(offsetMs)
+  return date.getUTCFullYear() + "-" + pad2(date.getUTCMonth() + 1) + "-" + pad2(date.getUTCDate())
+    + " " + pad2(date.getUTCHours()) + ":" + pad2(date.getUTCMinutes())
+}
+
 function getPasswordStrength(password) {
   if (!password) {
     return { text: "", width: 0, level: 0 }
@@ -123,5 +145,6 @@ module.exports = {
   normalizeServerScale,
   maskCompany,
   formatRelativeTime,
+  formatBeijingDateTime,
   getPasswordStrength
 }

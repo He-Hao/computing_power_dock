@@ -12,7 +12,9 @@ Page({
     },
     activePool: "all",
     activeStatus: "all",
+    activeType: "全部",
     keyword: "",
+    typeFilterChips: require("../../utils/data").getResourceTypeFilterChips(),
     allItems: [],
     items: [],
     poolFilters: [
@@ -98,6 +100,7 @@ Page({
     var filtered = data.filterStaffProxyListingViews(this.data.allItems, {
       pool: this.data.activePool,
       status: this.data.activeStatus,
+      activeType: this.data.activeType,
       keyword: this.data.keyword
     })
     var patch = pagedList.applyPage(filtered, this, { reset: true })
@@ -114,6 +117,10 @@ Page({
 
   setStatusFilter(event) {
     this.setData({ activeStatus: event.currentTarget.dataset.value }, this.applyFilters)
+  },
+
+  setTypeFilter(event) {
+    this.setData({ activeType: event.currentTarget.dataset.type }, this.applyFilters)
   },
 
   onSearchInput(event) {

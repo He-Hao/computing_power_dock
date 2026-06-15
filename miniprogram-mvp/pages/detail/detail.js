@@ -1338,5 +1338,21 @@ Page({
       emptyTip: "暂无编号",
       successTip: "编号已复制"
     })
+  },
+
+  copyListingText() {
+    const data = require("../../utils/data")
+    const copyText = require("../../utils/copyText")
+    var item = this.data.item
+    if (!item) {
+      return
+    }
+    var text = data.buildListingPublicCopyText(item, this.data.isResource, {
+      listingId: this.data.itemId
+    })
+    copyText.copyTextToClipboard(text, {
+      emptyTip: "暂无可复制内容",
+      successTip: "已复制商机文字"
+    })
   }
 })

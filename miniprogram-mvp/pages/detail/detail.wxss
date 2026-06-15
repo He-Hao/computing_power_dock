@@ -137,13 +137,28 @@
   white-space: nowrap;
 }
 
-.detail-page .res-section-head {
+.detail-page .res-section-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
   margin: 16rpx 0 8rpx;
+}
+
+.detail-page .res-section-head {
+  margin: 0;
   font-size: 26rpx;
 }
 
-.detail-page .res-section:first-child .res-section-head {
+.detail-page .res-section:first-child .res-section-head-row {
   margin-top: 0;
+}
+
+.detail-copy-link {
+  flex-shrink: 0;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #176b5b;
 }
 
 .res-spec-card {

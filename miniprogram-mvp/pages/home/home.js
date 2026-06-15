@@ -4,16 +4,16 @@ Page({
 
   data: {
     heroTagline: "算力产业链商机撮合平台",
-    heroDesc: "汇集算力整机、硬件配件、算力租赁、机房建设与资金支持等领域的资源与需求，供双方浏览与对接。",
-    heroNote: "平台审核名片并协助交换联系方式，不参与交易与资金往来。",
-    guideSectionSub: "三步完成真实商机对接",
-    disclaimerNotice: "本平台仅提供商机信息与撮合协助，不参与交易、不代收代付，不对信息真实性作担保，线下洽谈风险由双方自行承担。",
+    heroDesc: "覆盖整机、配件、租赁、运维、机房建设、托管运营与资金等方向，汇集真实算力资源与采购需求，供双方浏览与匹配。",
+    heroNote: "供方可发布资源，需方可发布需求或浏览资源池；详情页填写说明发起对接，双方确认后交换联系方式。平台审核名片与资质，不参与交易与资金往来。",
+    guideSectionSub: "浏览商机 → 发起对接 → 确认交换",
+    disclaimerNotice: "本平台仅提供信息发布、意向登记、企业认证与线下商务撮合协助，不提供线上交易或支付结算，不对信息真实性作担保，线下洽谈风险由双方自行承担。",
     resourceCount: 0,
     demandCount: 0,
     usageSteps: [
-      { step: "1", title: "浏览", text: "资源池 / 需求池", tone: "green", mock: "browse" },
-      { step: "2", title: "对接", text: "详情页发起申请", tone: "blue", mock: "connect" },
-      { step: "3", title: "交换", text: "双方确认联系方式", tone: "amber", mock: "exchange" }
+      { step: "1", title: "浏览", text: "资源池 / 需求池筛选", tone: "green", mock: "browse" },
+      { step: "2", title: "对接", text: "详情页填写说明申请", tone: "blue", mock: "connect" },
+      { step: "3", title: "交换", text: "双方确认后换名片", tone: "amber", mock: "exchange" }
     ],
     staffUser: false,
     pendingConnectNotice: null,
