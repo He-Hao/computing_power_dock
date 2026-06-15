@@ -1,0 +1,317 @@
+<view class="page record-page {{showFixedBar ? 'has-fixed-bar' : ''}}" wx:if="{{record}}">
+  <!-- 对接成功态 -->
+  <block wx:if="{{record.type === 'connect' && disclosedPartyViews}}">
+    <view class="success-page">
+      <view class="success-icon">✓</view>
+      <view class="success-title">已交换联系方式</view>
+      <view
+        class="trade-id-line copyable-id"
+        wx:if="{{record.id}}"
+        bindlongpress="copyTradeId"
+        data-text="{{record.id}}"
+      >编号：{{record.id}}</view>
+      <view class="success-desc">双方已获得对方企业名称、联系人和手机号。请尽快线下约谈，平台将跟踪商机状态。</view>
+    </view>
+
+    <view class="card connect-success-listings" wx:if="{{connectParties.length > 0}}">
+      <view class="section-title compact">对接商机</view>
+      <view class="publish-tip">可预览本次对接关联的资源与需求详情。</view>
+      <view class="party-card {{item.canOpenListing ? 'party-card-link' : ''}}" wx:for="{{connectParties}}" wx:key="partyRole">
+        <view class="party-head">
+          <view class="party-side">{{item.roleLabel || item.side}}</view>
+          <text class="party-pool-tag" wx:if="{{item.poolTypeLabel}}">{{item.poolTypeLabel}}</text>
+        </view>
+        <view
+          class="party-title {{item.canOpenListing ? 'party-title-link' : ''}}"
+          wx:if="{{item.canOpenListing}}"
+          bindtap="goConnectPartyListing"
+          data-id="{{item.listingId}}"
+        >{{item.title}}</view>
+        <view class="party-title" wx:else>{{item.title}}</view>
+        <view class="party-meta" wx:if="{{item.type}}">{{item.type}}<text wx:if="{{item.region}}"> · {{item.region}}</text></view>
+        <view class="party-summary" wx:if="{{item.summary}}">{{item.summary}}</view>
+        <view
+          class="party-listing-action"
+          wx:if="{{item.canOpenListing}}"
+          bindtap="goConnectPartyListing"
+          data-id="{{item.listingId}}"
+        >查看{{item.poolTypeLabel}}详情 ›</view>
+      </view>
+    </view>
+
+    <view class="card" wx:if="{{record.description}}">
+      <view class="section-title compact">对接理由</view>
+      <view class="desc connect-reason">{{record.description}}</view>
+    </view>
+
+    <view class="contact-reveal">
+      <view class="contact-reveal-head">
+        <view class="contact-reveal-title">需求方联系方式</view>
+        <view class="contact-copy-btn" catchtap="copyContactInfo" data-side="demand">复制全部</view>
+      </view>
+      <view class="contact-line"><text>企业</text><text>{{disclosedPartyViews.demand.company}}</text></view>
+      <view class="contact-line"><text>联系人</text><text>{{disclosedPartyViews.demand.contact}}</text></view>
+      <view class="contact-line contact-line-phone">
+        <text>手机</text>
+        <view class="contact-line-value">
+          <text class="contact-phone-text">{{disclosedPartyViews.demand.phone}}</text>
+          <text class="contact-copy-link" catchtap="copyContactPhone" data-side="demand">复制</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="contact-reveal resource-side">
+      <view class="contact-reveal-head">
+        <view class="contact-reveal-title">资源方联系方式</view>
+        <view class="contact-copy-btn" catchtap="copyContactInfo" data-side="resource">复制全部</view>
+      </view>
+      <view class="contact-line"><text>企业</text><text>{{disclosedPartyViews.resource.company}}</text></view>
+      <view class="contact-line"><text>联系人</text><text>{{disclosedPartyViews.resource.contact}}</text></view>
+      <view class="contact-line contact-line-phone">
+        <text>手机</text>
+        <view class="contact-line-value">
+          <text class="contact-phone-text">{{disclosedPartyViews.resource.phone}}</text>
+          <text class="contact-copy-link" catchtap="copyContactPhone" data-side="resource">复制</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card next-tips connect-next-actions" wx:if="{{connectNextSteps.length > 0}}">
+      <view class="section-title compact">下一步操作</view>
+      <view
+        class="connect-next-step-item"
+        wx:for="{{connectNextSteps}}"
+        wx:key="key"
+        bindtap="onConnectNextStep"
+        data-action="{{item.action}}"
+        data-phone="{{item.phone}}"
+      >
+        <text class="connect-next-step-icon">{{item.icon}}</text>
+        <view class="connect-next-step-copy">
+          <view class="connect-next-step-title">{{item.title}}</view>
+          <view class="connect-next-step-hint">{{item.hint}}</view>
+        </view>
+        <text class="connect-next-step-arrow">›</text>
+      </view>
+    </view>
+
+    <view class="card next-tips">
+      <view class="section-title compact">沟通建议</view>
+      <view class="tip-item">24 小时内完成首次电话/微信沟通</view>
+      <view class="tip-item">明确技术对接时间与方案细节</view>
+      <view class="tip-item">线下合作前请核实企业资质与商务条款</view>
+    </view>
+
+    <view class="card connect-risk-notice" wx:if="{{connectRiskNotice}}">
+      <view class="section-title compact">{{connectRiskNotice.title}}</view>
+      <view class="risk-notice-item" wx:for="{{connectRiskNotice.items}}" wx:key="*this">{{index + 1}}. {{item}}</view>
+    </view>
+  </block>
+
+  <!-- 普通记录 / 对接进行中 -->
+  <block wx:else>
+    <view
+      class="connect-pending-banner {{record.connectPendingBadgeClass}}"
+      wx:if="{{record.type === 'connect' && record.connectPendingLabel}}"
+    >
+      <text class="connect-pending-banner-label">{{record.connectPendingLabel}}</text>
+      <text class="connect-pending-banner-hint">{{record.connectPendingHint}}</text>
+    </view>
+
+    <view class="hero-card {{record.type === 'connect' ? 'light' : ''}}">
+      <view class="hero-kicker-sm">{{record.typeName}}</view>
+      <view class="hero-title">{{record.title || record.cardTitle || record.typeName}}</view>
+      <view class="hero-status {{record.statusBadgeClass}}" wx:if="{{record.type !== 'connect' && record.displayStatus}}">{{record.displayStatus}}</view>
+      <view class="hero-status {{record.connectStatusBadgeClass}}" wx:elif="{{record.type === 'connect' && !record.connectPendingLabel && record.connectStatusLabel}}">{{record.connectStatusLabel}}</view>
+      <view class="hero-text">{{record.statusHint}}</view>
+      <view class="publish-tip listing-publish-tip" wx:if="{{listingPublishTip}}">{{listingPublishTip}}</view>
+      <view
+        class="hero-time copyable-id"
+        wx:if="{{record.id}}"
+        bindlongpress="copyTradeId"
+        data-text="{{record.id}}"
+      >编号：{{record.id}}</view>
+      <view class="hero-time" wx:if="{{record.createdAt}}">提交时间：{{record.createdAt}}</view>
+    </view>
+
+    <view class="limited-banner confirm-banner" wx:if="{{connectActions && connectActions.canConfirm}}">
+      {{isResourceConnect ? '您收到一条资源匹配申请。请确认是否愿意进入下一步沟通。' : '您收到一条对接申请。请确认是否愿意进入下一步沟通。'}}
+    </view>
+
+    <view class="limited-banner confirm-banner" wx:if="{{connectActions && connectActions.canExchange}}">
+      对方已确认对接，请选择是否交换联系方式。
+    </view>
+
+    <view class="card rejection-resubmit-card" wx:if="{{rejectionResubmitGuide}}">
+      <view class="section-title compact">{{rejectionResubmitGuide.title}}</view>
+      <view class="rejection-resubmit-hint">{{rejectionResubmitGuide.hint}}</view>
+      <view class="rejection-resubmit-tip" wx:for="{{rejectionResubmitGuide.tips}}" wx:key="*this">· {{item}}</view>
+      <view class="button-primary rejection-resubmit-btn" wx:if="{{rejectionResubmitGuide.actionText}}" bindtap="onRejectionResubmit">{{rejectionResubmitGuide.actionText}}</view>
+    </view>
+
+    <view class="card" wx:if="{{record.type === 'connect' && connectParties.length > 0}}">
+      <view class="section-title compact">对接双方</view>
+      <view class="party-card {{item.canOpenListing ? 'party-card-link' : ''}}" wx:for="{{connectParties}}" wx:key="partyRole">
+        <view class="party-head">
+          <view class="party-side">{{item.side}}{{item.roleLabel ? '（' + item.roleLabel + '）' : ''}}</view>
+          <text class="party-pool-tag" wx:if="{{item.poolTypeLabel}}">{{item.poolTypeLabel}}</text>
+        </view>
+        <view
+          class="party-title {{item.canOpenListing ? 'party-title-link' : ''}}"
+          wx:if="{{item.canOpenListing}}"
+          bindtap="goConnectPartyListing"
+          data-id="{{item.listingId}}"
+        >{{item.title}}</view>
+        <view class="party-title" wx:else>{{item.title}}</view>
+        <view class="party-meta" wx:if="{{item.type}}">{{item.type}} · {{item.region}}</view>
+        <view class="party-meta muted" wx:if="{{item.contactLocked}}">交换名片后可查看企业名称与联系人</view>
+        <view class="party-meta" wx:elif="{{item.company}}">{{item.company}}<text wx:if="{{item.contact}}"> · {{item.contact}}</text></view>
+        <view class="party-summary" wx:if="{{item.summary}}">{{item.summary}}</view>
+        <view
+          class="party-listing-action"
+          wx:if="{{item.canOpenListing}}"
+          bindtap="goConnectPartyListing"
+          data-id="{{item.listingId}}"
+        >预览{{item.poolTypeLabel}} ›</view>
+      </view>
+    </view>
+
+    <view class="card" wx:if="{{record.type === 'connect' && record.description}}">
+      <view class="section-title compact">对接理由</view>
+      <view class="desc connect-reason">{{record.description}}</view>
+    </view>
+
+    <view class="card linked-connects-card" wx:if="{{linkedConnects.length > 0}}" id="linked-connects">
+      <view class="section-title compact">关联对接 · {{linkedConnects.length}} 条</view>
+      <view class="publish-tip" wx:if="{{linkedConnectPending > 0}}">有 {{linkedConnectPending}} 条对接待您处理，请点击查看并操作。</view>
+      <view
+        class="linked-connect-item"
+        wx:for="{{linkedConnects}}"
+        wx:key="id"
+        bindtap="goConnectRecord"
+        data-id="{{item.id}}"
+      >
+        <view class="linked-connect-item-head">
+          <view class="linked-connect-item-title">{{item.title}}</view>
+          <text class="status-badge {{item.statusBadgeClass}}">{{item.statusLabel || item.displayStatus}}</text>
+        </view>
+        <view class="linked-connect-item-meta">
+          <text class="linked-pending-tag {{item.pendingBadgeClass}}" wx:if="{{item.pendingLabel}}">{{item.pendingLabel}}</text>
+          <text class="muted linked-pending-hint" wx:if="{{item.pendingHint}}">{{item.pendingHint}}</text>
+          <text class="muted">{{item.relativeTime}}</text>
+        </view>
+        <view class="muted linked-connect-item-summary" wx:if="{{item.summaryLine}}">{{item.summaryLine}}</view>
+        <view class="linked-connect-item-action">查看对接详情 ›</view>
+      </view>
+    </view>
+
+    <view class="card listing-publish-card" wx:if="{{showListingButton || canTogglePublicDisplay}}">
+      <view class="section-title compact">公示设置</view>
+      <view class="public-display-row record-public-display" wx:if="{{canTogglePublicDisplay}}">
+        <view class="public-display-main">
+          <view class="public-display-title">对外公开展示</view>
+          <view class="public-display-tip">{{listingPublicDisplay ? '已在' + (record.type === 'resource' ? '资源' : '需求') + '池脱敏展示' : '未在' + (record.type === 'resource' ? '资源' : '需求') + '池展示，仅你可见'}}</view>
+        </view>
+        <switch checked="{{listingPublicDisplay}}" bindchange="onPublicDisplayChange" disabled="{{publicDisplayLoading}}" color="#176b5b" />
+      </view>
+      <view class="button-secondary listing-preview-btn" wx:if="{{showListingButton}}" bindtap="goListing">{{listingButtonText}}</view>
+    </view>
+
+    <view class="card" wx:if="{{record.type !== 'connect'}}">
+      <view class="section-title compact">提交信息</view>
+      <view class="detail-row" wx:for="{{detailRows}}" wx:key="label">
+        <text class="label">{{item.label}}</text>
+        <text class="value">{{item.value}}</text>
+      </view>
+      <view class="desc detail-desc" wx:if="{{record.description}}">{{record.description}}</view>
+    </view>
+
+    <view class="card" wx:if="{{attachments.length > 0 || canEditAttachments}}">
+      <view class="section-title compact">附件材料</view>
+      <view class="form-tip" wx:if="{{canEditAttachments && record.type === 'resource'}}">审核前可增删附件，保存后生效；他人需完成营业执照认证后可查看。</view>
+      <view class="form-tip" wx:elif="{{canEditAttachments}}">审核前可增删附件，保存后生效；附件不公开展示。</view>
+      <view class="form-tip" wx:elif="{{record.type === 'resource'}}">附件材料在资源详情中展示，他人需完成营业执照认证后可查看。</view>
+      <view class="attachment-list">
+        <view class="attachment-item" wx:for="{{attachments}}" wx:key="id">
+          <view class="attachment-main" bindtap="previewAttachment" data-index="{{index}}">
+            <image class="attachment-thumb" wx:if="{{item.fileType === 'image'}}" src="{{item.displayUrl || item.url}}" mode="aspectFill" />
+            <view class="attachment-file" wx:else>📄</view>
+            <view class="attachment-name">{{item.name}}</view>
+          </view>
+          <view class="attachment-remove" wx:if="{{canEditAttachments}}" bindtap="removeAttachment" data-id="{{item.id}}">删除</view>
+        </view>
+      </view>
+      <view class="attachment-add" wx:if="{{canEditAttachments && attachments.length < maxAttachments}}" bindtap="chooseAttachment">
+        <text class="attachment-add-icon">+</text>
+        <text>添加附件</text>
+      </view>
+      <view class="button-secondary attachment-save {{actionLoading === 'save' ? 'btn-busy' : ''}}" wx:if="{{canEditAttachments}}" bindtap="saveAttachments">{{actionLoading === 'save' ? '保存中...' : '保存附件修改'}}</view>
+    </view>
+
+    <view class="card" wx:if="{{record.certImages.length > 0}}">
+      <view class="section-title compact">认证材料</view>
+      <view class="cert-image-block" wx:for="{{record.certImages}}" wx:key="label">
+        <view class="cert-image-label">{{item.label}}</view>
+        <image wx:if="{{!item.unavailable && (item.displayUrl || item.url)}}" class="cert-image" src="{{item.displayUrl || item.url}}" mode="aspectFill" bindtap="previewCertImage" data-url="{{item.displayUrl || item.url}}" />
+        <view class="cert-image-missing" wx:else>{{item.unavailableHint || '认证图片未上传至云端'}}</view>
+      </view>
+    </view>
+
+    <view class="card" wx:if="{{connectActions && (connectActions.canCancel || connectActions.canReapply)}}">
+      <view class="section-title compact">申请方操作</view>
+      <view class="publish-tip" wx:if="{{connectActions.canCancel && connectActions.canReapply}}">对方尚未回应时，您可以取消本次对接，或取消后重新提交申请。操作按钮见页面底部。</view>
+      <view class="publish-tip" wx:elif="{{connectActions.canCancel}}">对方尚未回应时，您可以取消本次对接；每条资源仅保留一条进行中的申请。操作按钮见页面底部。</view>
+      <view class="publish-tip" wx:else>本次对接已取消，您可点击底部「重新申请」向该商机再次发起对接。</view>
+    </view>
+
+    <view class="card" wx:if="{{connectActions && connectActions.canConfirm}}">
+      <view class="section-title compact">{{isResourceConnect ? '需求方确认' : '资源方确认'}}</view>
+      <view class="publish-tip">点击底部「同意并发起交换名片」后，对接将进入交换环节，等待申请方确认。</view>
+    </view>
+
+    <view class="card" wx:if="{{connectActions && connectActions.canReview}}">
+      <view class="section-title compact">平台审批</view>
+      <view class="publish-tip">该对接涉及平台代发商机，需运营在待审中心批准后才能进入对方确认流程。请点击底部「前往审批」。</view>
+    </view>
+
+    <view class="card" wx:if="{{connectActions && connectActions.canExchange}}">
+      <view class="section-title compact">交换名片</view>
+      <view class="publish-tip" wx:if="{{connectActions.role === 'applicant'}}">对方已发起交换名片，点击底部「同意交换名片」后即可查看双方联系方式。</view>
+      <view class="publish-tip" wx:else>点击底部「同意交换名片」后，双方均可看到完整联系方式。</view>
+    </view>
+
+    <view class="card">
+      <view class="section-title compact">跟进进度</view>
+      <view class="timeline-item" wx:for="{{flowTimeline}}" wx:key="status">
+        <view class="timeline-dot {{item.dotState}}"></view>
+        <view class="timeline-body">
+          <view class="timeline-status">{{item.status}}</view>
+          <view class="timeline-hint" wx:if="{{item.hint}}">{{item.hint}}</view>
+          <view class="timeline-time" wx:if="{{item.time}}">{{item.time}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="fixed-bottom-bar" wx:if="{{showFixedBar}}">
+      <block wx:if="{{connectActions && connectActions.canConfirm}}">
+        <view class="button-secondary {{actionLoading ? 'btn-busy' : ''}}" catchtap="rejectConnect">{{actionLoading === 'reject' ? '处理中...' : '暂不合适'}}</view>
+        <view class="button-primary {{actionLoading ? 'btn-busy' : ''}}" catchtap="confirmConnect">{{actionLoading === 'confirm' ? '处理中...' : '同意并发起交换名片'}}</view>
+      </block>
+      <block wx:elif="{{connectActions && connectActions.canExchange}}">
+        <view class="button-secondary {{actionLoading ? 'btn-busy' : ''}}" catchtap="declineExchange">{{actionLoading === 'decline' ? '处理中...' : '暂不交换'}}</view>
+        <view class="button-primary {{actionLoading ? 'btn-busy' : ''}}" catchtap="agreeExchange">{{actionLoading === 'agree' ? '处理中...' : '同意交换名片'}}</view>
+      </block>
+      <block wx:elif="{{connectActions && connectActions.canReview}}">
+        <view class="button-primary full-width" bindtap="goAdminReviewConnect">前往审批</view>
+      </block>
+      <block wx:elif="{{connectActions && (connectActions.canCancel || connectActions.canReapply)}}">
+        <view class="button-secondary {{connectActions.canReapply ? '' : 'full-width'}} {{actionLoading ? 'btn-busy' : ''}}" wx:if="{{connectActions.canCancel}}" bindtap="cancelConnectApply">{{actionLoading === 'cancel' ? '处理中...' : '取消对接'}}</view>
+        <view class="button-primary {{connectActions.canCancel ? '' : 'full-width'}} {{actionLoading ? 'btn-busy' : ''}}" wx:if="{{connectActions.canReapply}}" bindtap="continueConnectApply">{{actionLoading === 'reapply' ? '处理中...' : (connectActions.canCancel ? '继续申请' : '重新申请')}}</view>
+      </block>
+    </view>
+  </block>
+</view>
+
+<view class="page" wx:else>
+  <view class="empty">没有找到这条记录</view>
+</view>

@@ -1,0 +1,869 @@
+<view class="page">
+  <view class="card form-intro" wx:if="{{pageSubtitle}}">
+    <view class="form-subtitle">{{pageSubtitle}}</view>
+  </view>
+
+  <view class="limited-banner pending-banner" wx:if="{{isProxyMode}}">
+    <view class="limited-banner-title">平台代发模式</view>
+    <view class="limited-banner-text">请填写客户企业与联系人；手机号选填，填写后可归属客户账号并接收对接通知。</view>
+  </view>
+
+  <view class="card target-card" wx:if="{{targetPreview || targetTitle}}">
+    <view class="target-head">
+      <view class="target-head-main">
+        <view class="target-label">{{isResourceConnect ? '匹配需求方' : '对接资源方'}}</view>
+      </view>
+      <view class="favorite-btn {{targetFavorited ? 'active' : ''}}" bindtap="toggleTargetFavorite" wx:if="{{targetId}}">
+        <text class="favorite-glyph">{{targetFavorited ? '★' : '☆'}}</text>
+      </view>
+    </view>
+    <view
+      class="pool-card-v2 {{isResourceConnect ? 'pool-card-v2-demand' : 'pool-card-v2-resource'}} pool-card-v2-compact target-preview-card"
+      wx:if="{{targetPreview}}"
+    >
+      <view class="pool-card-v2-head">
+        <view class="pool-card-v2-meta-left">
+          <text class="pool-card-v2-type">{{targetPreview.type}}</text>
+        </view>
+      </view>
+      <view class="pool-card-v2-title">{{targetPreview.title}}</view>
+      <view class="pool-card-v2-facts" wx:if="{{targetPreview.poolFacts.length}}">
+        <text class="pool-card-v2-fact" wx:for="{{targetPreview.poolFacts}}" wx:for-item="fact" wx:key="label">{{fact.icon}} {{fact.text}}</text>
+      </view>
+      <view class="pool-card-v2-summary" wx:if="{{targetPreview.poolSummaryLine}}">{{targetPreview.poolSummaryLine}}</view>
+    </view>
+    <view class="target-title-fallback" wx:elif="{{targetTitle}}">{{targetTitle}}</view>
+    <view class="form-tip" wx:if="{{isConnectForm && !isResourceConnect}}">对接方向：你的需求 → 该资源（资源方确认后可交换联系方式）</view>
+    <view class="form-tip" wx:if="{{isResourceConnect}}">匹配方向：你的资源 → 该需求（需求方确认后可交换联系方式）</view>
+  </view>
+
+  <view class="limited-banner login-banner" wx:if="{{needsLogin}}">
+    <view class="limited-banner-title">请先登录</view>
+    <view class="limited-banner-text" wx:if="{{isConnectForm}}">登录后可填写对接申请。提交后由资源方确认信息，双方同意后可交换联系方式。</view>
+    <view class="limited-banner-text" wx:else>登录后可继续填写并提交本页信息。</view>
+  </view>
+
+  <view class="limited-banner cert-banner" wx:if="{{needsCardCert}}">
+    <view class="limited-banner-title">{{certBannerTitle}}</view>
+    <view class="limited-banner-text">{{certBannerText}}</view>
+    <view class="limited-banner-link" bindtap="goCertAction">{{certActionText}} ›</view>
+  </view>
+
+  <view class="card form-card">
+    <block wx:if="{{isQuickDemand}}">
+
+      <view class="field" wx:if="{{type !== 'room'}}">
+        <view class="field-label">需求类型 <text class="required">*</text></view>
+        <picker mode="selector" range="{{listingTypeOptions}}" bindchange="onListingTypeChange">
+          <view class="picker-value">{{form.listingType || "请选择类型"}}</view>
+        </picker>
+        <view class="field-hint" wx:if="{{listingTypeHint}}">{{listingTypeHint}}</view>
+      </view>
+
+      <view class="field">
+        <view class="field-label">需求标题<text class="required" wx:if="{{!isServerForm && !isPartsForm}}">*</text></view>
+        <input value="{{form.title}}" data-field="title" bindinput="onInput" placeholder="{{isServerForm ? '留空则按产品自动生成' : (isPartsForm ? '留空则按配件名称自动生成' : '例如：寻找 64 卡训练资源')}}" />
+      </view>
+
+      <block wx:if="{{isServerForm}}">
+        <view class="form-section">整机信息</view>
+
+        <view class="field">
+          <view class="field-label">产品 <text class="required">*</text></view>
+          <input value="{{form.serverProduct}}" data-field="serverProduct" bindinput="onInput" placeholder="H100 训练服务器" />
+        </view>
+        <view class="field">
+          <view class="field-label">规格 <text class="required">*</text></view>
+          <input value="{{form.configSpec}}" data-field="configSpec" bindinput="onInput" maxlength="200" placeholder="8卡 H100，512G 内存" />
+        </view>
+        <view class="field">
+          <view class="field-label">数量 <text class="required">*</text></view>
+          <input value="{{form.scale}}" data-field="scale" bindinput="onInput" placeholder="128台" />
+        </view>
+        <view class="field">
+          <view class="field-label">预算 <text class="required">*</text></view>
+          <input value="{{form.budget}}" data-field="budget" bindinput="onInput" placeholder="680万 / 可谈" />
+        </view>
+        <view class="field">
+          <view class="field-label">交期 <text class="required">*</text></view>
+          <view class="delivery-time-row">
+            <view class="delivery-kind-segment">
+              <view
+                class="delivery-kind-option {{form.deliveryKind === '现货' ? 'active' : ''}}"
+                bindtap="setServerDeliveryKind"
+                data-kind="现货"
+              >现货</view>
+              <view
+                class="delivery-kind-option {{form.deliveryKind === '准现货' ? 'active' : ''}}"
+                bindtap="setServerDeliveryKind"
+                data-kind="准现货"
+              >准现货</view>
+              <view
+                class="delivery-kind-option {{form.deliveryKind === '期货' ? 'active' : ''}}"
+                bindtap="setServerDeliveryKind"
+                data-kind="期货"
+              >期货</view>
+            </view>
+            <input
+              class="delivery-detail-input"
+              value="{{form.deliveryTimeDetail}}"
+              bindinput="onServerDeliveryDetailInput"
+              placeholder="选填"
+            />
+          </view>
+        </view>
+        <view class="field">
+          <view class="field-label">地点</view>
+          <input value="{{form.procurementRegion}}" data-field="procurementRegion" bindinput="onInput" maxlength="100" placeholder="选填" />
+        </view>
+        <view class="field">
+          <view class="field-label">质保</view>
+          <input value="{{form.warranty}}" data-field="warranty" bindinput="onInput" placeholder="选填" />
+        </view>
+        <view class="field">
+          <view class="field-label">支付</view>
+          <input value="{{form.serverPayment}}" data-field="serverPayment" bindinput="onInput" placeholder="选填" />
+        </view>
+        <view class="field">
+          <view class="field-label">流程</view>
+          <input value="{{form.serverProcess}}" data-field="serverProcess" bindinput="onInput" placeholder="选填" />
+        </view>
+      </block>
+
+      <block wx:elif="{{isPartsForm}}">
+        <view class="form-section">配件信息</view>
+
+        <view class="field">
+          <view class="field-label">配件名称 <text class="required">*</text></view>
+          <input value="{{form.serverProduct}}" data-field="serverProduct" bindinput="onInput" placeholder="例如：H100 GPU 模组 / 高速线缆 / 存储盘" />
+        </view>
+        <view class="field">
+          <view class="field-label">规格型号 <text class="required">*</text></view>
+          <input value="{{form.specModel}}" data-field="specModel" bindinput="onInput" maxlength="200" placeholder="例如：80G SXM5 / 400G DAC 3m / 3.84T NVMe" />
+        </view>
+        <view class="field">
+          <view class="field-label">数量 <text class="required">*</text></view>
+          <input value="{{form.scale}}" data-field="scale" bindinput="onInput" placeholder="例如：32 片 / 200 根 / 50 块" />
+        </view>
+        <view class="field">
+          <view class="field-label">预算 <text class="required">*</text></view>
+          <input value="{{form.budget}}" data-field="budget" bindinput="onInput" placeholder="例如：120 万 / 单价可谈" />
+        </view>
+        <view class="field">
+          <view class="field-label">交期<text class="required" wx:if="{{isProxyMode}}">*</text></view>
+          <input value="{{form.deliveryTime}}" data-field="deliveryTime" bindinput="onInput" placeholder="{{isProxyMode ? '必填，如：现货 / 7 天内到货' : '例如：现货 / 7 天内到货 / 期货 2 周'}}" />
+        </view>
+        <view class="field" wx:if="{{!isProxyMode}}">
+          <view class="field-label">收货地点 <text class="required">*</text></view>
+          <input value="{{form.procurementRegion}}" data-field="procurementRegion" bindinput="onInput" maxlength="100" placeholder="例如：深圳保税仓 / 上海 XX 数据中心" />
+        </view>
+        <view class="field" wx:if="{{!isProxyMode}}">
+          <view class="field-label">质保</view>
+          <input value="{{form.warranty}}" data-field="warranty" bindinput="onInput" placeholder="例如：原厂质保 1 年" />
+        </view>
+        <view class="field" wx:if="{{!isProxyMode}}">
+          <view class="field-label">品牌偏好</view>
+          <input value="{{form.serverBrand}}" data-field="serverBrand" bindinput="onInput" placeholder="例如：原厂 / 兼容 H100 / 不限" />
+        </view>
+
+        <block wx:if="{{isProxyMode}}">
+          <view class="form-section">选填信息</view>
+          <view class="field">
+            <view class="field-label">收货地点</view>
+            <input value="{{form.procurementRegion}}" data-field="procurementRegion" bindinput="onInput" maxlength="100" placeholder="选填，如：深圳保税仓" />
+          </view>
+          <view class="field">
+            <view class="field-label">质保</view>
+            <input value="{{form.warranty}}" data-field="warranty" bindinput="onInput" placeholder="例如：原厂质保 1 年" />
+          </view>
+          <view class="field">
+            <view class="field-label">品牌偏好</view>
+            <input value="{{form.serverBrand}}" data-field="serverBrand" bindinput="onInput" placeholder="例如：原厂 / 兼容 H100 / 不限" />
+          </view>
+        </block>
+      </block>
+
+      <block wx:else>
+      <view class="field">
+        <view class="field-label">需求规模 <text class="required">*</text></view>
+        <input value="{{form.scale}}" data-field="scale" bindinput="onInput" placeholder="例如：128 卡 / 50 个机柜" />
+      </view>
+
+      <view class="field">
+        <view class="field-label">预算 <text class="required">*</text></view>
+        <input value="{{form.budget}}" data-field="budget" bindinput="onInput" placeholder="例如：50 万/月 / 面议" />
+      </view>
+      </block>
+
+      <view class="form-section" wx:if="{{showSupplementSection && !isProxyMode}}">补充信息</view>
+      <view class="form-section" wx:if="{{showSupplementSection && isProxyMode}}">选填信息</view>
+
+      <block wx:if="{{isRentalForm && !isServerForm}}">
+        <view class="field">
+          <view class="field-label">租赁标的</view>
+          <input value="{{form.rentalSubject}}" data-field="rentalSubject" bindinput="onInput" placeholder="例如：训练算力 / 推理部署 / IDC 机柜" />
+        </view>
+        <view class="field">
+          <view class="field-label">需求规模</view>
+          <input value="{{form.scale}}" data-field="scale" bindinput="onInput" placeholder="例如：64 卡 / 20 个机柜" />
+        </view>
+        <view class="field">
+          <view class="field-label">期望开始</view>
+          <input value="{{form.startTime}}" data-field="startTime" bindinput="onInput" placeholder="例如：尽快 / 2026 年 Q3" />
+        </view>
+        <view class="field">
+          <view class="field-label">预算范围</view>
+          <input value="{{form.budget}}" data-field="budget" bindinput="onInput" placeholder="例如：50 万/月 / 项目预算待定" />
+        </view>
+        <view class="field">
+          <view class="field-label">型号/规格</view>
+          <input value="{{form.specModel}}" data-field="specModel" bindinput="onInput" placeholder="例如：H800 / A100 / 昇腾 910B" />
+        </view>
+        <view class="field">
+          <view class="field-label">租期/周期</view>
+          <input value="{{form.cycle}}" data-field="cycle" bindinput="onInput" placeholder="例如：3 个月起租 / 按项目" />
+        </view>
+        <view class="field">
+          <view class="field-label">交付方式</view>
+          <picker mode="selector" range="{{deliveryOptions}}" bindchange="onDeliveryChange">
+            <view class="picker-value">{{form.delivery || "请选择交付方式"}}</view>
+          </picker>
+        </view>
+        <view class="field">
+          <view class="field-label">交付周期<text class="required" wx:if="{{isProxyMode}}">*</text></view>
+          <input value="{{form.deliveryTime}}" data-field="deliveryTime" bindinput="onInput" placeholder="{{isProxyMode ? '必填，如：7 天内开通 / 预约排期' : '例如：7 天内开通 / 预约排期'}}" />
+        </view>
+        <view class="field">
+          <view class="field-label">网络/配套</view>
+          <input value="{{form.networkSpec}}" data-field="networkSpec" bindinput="onInput" placeholder="例如：InfiniBand / 万兆 / RDMA" />
+        </view>
+        <view class="field">
+          <view class="field-label">数据中心</view>
+          <input value="{{form.idcName}}" data-field="idcName" bindinput="onInput" placeholder="例如：华东 XX 智算数据中心（选填）" />
+        </view>
+      </block>
+
+      <block wx:elif="{{isMaintForm && !isServerForm}}">
+        <view class="field">
+          <view class="field-label">维保对象</view>
+          <input value="{{form.maintenanceTarget}}" data-field="maintenanceTarget" bindinput="onInput" placeholder="例如：GPU 集群 / 数据中心基础设施" />
+        </view>
+        <view class="field">
+          <view class="field-label">服务级别</view>
+          <input value="{{form.warranty}}" data-field="warranty" bindinput="onInput" placeholder="例如：7×24 · 4 小时响应" />
+        </view>
+        <view class="field">
+          <view class="field-label">服务范围</view>
+          <input value="{{form.serviceScope}}" data-field="serviceScope" bindinput="onInput" placeholder="例如：巡检 / 备件 / 驻场运维" />
+        </view>
+        <view class="field">
+          <view class="field-label">合作周期</view>
+          <input value="{{form.cycle}}" data-field="cycle" bindinput="onInput" placeholder="例如：年签 / 3 年起" />
+        </view>
+      </block>
+
+      <block wx:elif="{{isRoomBuildForm && !isServerForm}}">
+        <view class="field">
+          <view class="field-label">建设规模</view>
+          <input value="{{form.projectScale}}" data-field="projectScale" bindinput="onInput" placeholder="例如：2000 机柜智算中心" />
+        </view>
+        <view class="field">
+          <view class="field-label">服务范围</view>
+          <input value="{{form.serviceScope}}" data-field="serviceScope" bindinput="onInput" placeholder="例如：设计+施工+液冷+运维系统" />
+        </view>
+        <view class="field">
+          <view class="field-label">项目周期<text class="required" wx:if="{{isProxyMode}}">*</text></view>
+          <input value="{{form.deliveryTime}}" data-field="deliveryTime" bindinput="onInput" placeholder="{{isProxyMode ? '必填，如：18 个月交付 / 分两期' : '例如：18 个月交付 / 分两期'}}" />
+        </view>
+        <view class="field">
+          <view class="field-label">预算范围</view>
+          <input value="{{form.budget}}" data-field="budget" bindinput="onInput" placeholder="例如：项目总预算 / 分期投入" />
+        </view>
+      </block>
+
+      <block wx:elif="{{isFinanceForm && !isServerForm}}">
+        <view class="field">
+          <view class="field-label">资金用途</view>
+          <input value="{{form.financePurpose}}" data-field="financePurpose" bindinput="onInput" placeholder="例如：机房建设 / 算力集群采购 / 设备分期" />
+        </view>
+        <view class="field">
+          <view class="field-label">资金规模</view>
+          <input value="{{form.financeScale}}" data-field="financeScale" bindinput="onInput" placeholder="例如：5000 万 / 按项目测算" />
+        </view>
+        <view class="field">
+          <view class="field-label">合作方式</view>
+          <input value="{{form.financeMode}}" data-field="financeMode" bindinput="onInput" placeholder="例如：融资租赁 / 项目贷 / 联合投资" />
+        </view>
+        <view class="field">
+          <view class="field-label">合作周期</view>
+          <input value="{{form.cycle}}" data-field="cycle" bindinput="onInput" placeholder="例如：3 年 / 按项目周期" />
+        </view>
+      </block>
+
+      <block wx:elif="{{isDcOpForm && !isServerForm}}">
+        <view class="field">
+          <view class="field-label">数据中心</view>
+          <input value="{{form.dcName}}" data-field="dcName" bindinput="onInput" placeholder="例如：西南 XX 数据中心（选填）" />
+        </view>
+        <view class="field">
+          <view class="field-label">服务范围</view>
+          <input value="{{form.serviceScope}}" data-field="serviceScope" bindinput="onInput" placeholder="例如：托管运维 / 渠道合作 / 增值服务" />
+        </view>
+        <view class="field">
+          <view class="field-label">合作周期</view>
+          <input value="{{form.cycle}}" data-field="cycle" bindinput="onInput" placeholder="例如：年签 / 3 年起" />
+        </view>
+      </block>
+
+      <view class="field">
+        <view class="field-label">补充说明</view>
+        <textarea
+          class="quick-textarea"
+          value="{{form.description}}"
+          data-field="description"
+          bindinput="onInput"
+          maxlength="300"
+          placeholder="选填"
+        />
+      </view>
+
+      <view class="form-section">{{isProxyMode ? '客户联系信息' : '联系信息'}}</view>
+
+      <view class="field" wx:if="{{needCompany || isProxyMode}}">
+        <view class="field-label">{{isProxyMode ? '客户企业名称' : '企业名称'}} <text class="required">*</text></view>
+        <input value="{{form.company}}" data-field="company" bindinput="onInput" placeholder="请输入企业名称" />
+      </view>
+
+      <view class="field">
+        <view class="field-label">企业所在地</view>
+        <picker mode="selector" range="{{regionOptions}}" bindchange="onRegionChange">
+          <view class="picker-value">{{form.region || "选填"}}</view>
+        </picker>
+      </view>
+
+      <view class="field">
+        <view class="field-label">{{isProxyMode ? '客户联系人' : '联系人'}} <text class="required">*</text></view>
+        <input value="{{form.contact}}" data-field="contact" bindinput="onInput" placeholder="请输入联系人姓名" />
+      </view>
+
+      <view class="field" wx:if="{{isProxyMode || !phoneLocked}}">
+        <view class="field-label">{{isProxyMode ? '客户手机号' : '手机号'}}<text class="required" wx:if="{{!isProxyMode && !phoneLocked}}">*</text></view>
+        <input
+          value="{{form.phone}}"
+          data-field="phone"
+          bindinput="onInput"
+          type="number"
+          maxlength="11"
+          disabled="{{phoneLocked}}"
+          placeholder="{{isProxyMode ? '选填，用于客户登录与对接通知' : '用于联系，不公开展示'}}"
+        />
+      </view>
+
+      <view class="quick-phone-tip" wx:if="{{phoneLocked && !isProxyMode}}">
+        已绑定手机号 {{maskedPhone}}，撮合经理将通过此号码联系你
+      </view>
+    </block>
+
+    <block wx:elif="{{isQuickResource}}">
+
+      <view class="field">
+        <view class="field-label">资源类型 <text class="required">*</text></view>
+        <picker mode="selector" range="{{listingTypeOptions}}" bindchange="onListingTypeChange">
+          <view class="picker-value">{{form.listingType || "请选择类型"}}</view>
+        </picker>
+        <view class="field-hint" wx:if="{{listingTypeHint}}">{{listingTypeHint}}</view>
+      </view>
+
+      <view class="field">
+        <view class="field-label">资源标题<text class="required" wx:if="{{!isServerForm && !isPartsForm}}">*</text></view>
+        <input value="{{form.title}}" data-field="title" bindinput="onInput" placeholder="{{isServerForm ? '留空则按产品自动生成' : (isPartsForm ? '留空则按配件名称自动生成' : '例如：华东 H100 训练集群 128 卡')}}" />
+      </view>
+
+      <block wx:if="{{isServerForm}}">
+        <view class="form-section">整机信息</view>
+
+        <view class="field">
+          <view class="field-label">产品 <text class="required">*</text></view>
+          <input value="{{form.serverProduct}}" data-field="serverProduct" bindinput="onInput" placeholder="H100 训练服务器" />
+        </view>
+        <view class="field">
+          <view class="field-label">规格 <text class="required">*</text></view>
+          <input value="{{form.configSpec}}" data-field="configSpec" bindinput="onInput" maxlength="200" placeholder="8卡 H100，512G 内存" />
+        </view>
+        <view class="field">
+          <view class="field-label">数量 <text class="required">*</text></view>
+          <input value="{{form.scale}}" data-field="scale" bindinput="onInput" placeholder="128台" />
+        </view>
+        <view class="field">
+          <view class="field-label">报价 <text class="required">*</text></view>
+          <input value="{{form.price}}" data-field="price" bindinput="onInput" placeholder="680万 / 可谈" />
+        </view>
+        <view class="field">
+          <view class="field-label">交期 <text class="required">*</text></view>
+          <view class="delivery-time-row">
+            <view class="delivery-kind-segment">
+              <view
+                class="delivery-kind-option {{form.deliveryKind === '现货' ? 'active' : ''}}"
+                bindtap="setServerDeliveryKind"
+                data-kind="现货"
+              >现货</view>
+              <view
+                class="delivery-kind-option {{form.deliveryKind === '准现货' ? 'active' : ''}}"
+                bindtap="setServerDeliveryKind"
+                data-kind="准现货"
+              >准现货</view>
+              <view
+                class="delivery-kind-option {{form.deliveryKind === '期货' ? 'active' : ''}}"
+                bindtap="setServerDeliveryKind"
+                data-kind="期货"
+              >期货</view>
+            </view>
+            <input
+              class="delivery-detail-input"
+              value="{{form.deliveryTimeDetail}}"
+              bindinput="onServerDeliveryDetailInput"
+              placeholder="选填"
+            />
+          </view>
+        </view>
+        <view class="field">
+          <view class="field-label">地点</view>
+          <input value="{{form.procurementRegion}}" data-field="procurementRegion" bindinput="onInput" maxlength="100" placeholder="选填" />
+        </view>
+        <view class="field">
+          <view class="field-label">质保</view>
+          <input value="{{form.warranty}}" data-field="warranty" bindinput="onInput" placeholder="选填" />
+        </view>
+        <view class="field">
+          <view class="field-label">支付</view>
+          <input value="{{form.serverPayment}}" data-field="serverPayment" bindinput="onInput" placeholder="选填" />
+        </view>
+        <view class="field">
+          <view class="field-label">流程</view>
+          <input value="{{form.serverProcess}}" data-field="serverProcess" bindinput="onInput" placeholder="选填" />
+        </view>
+        <view class="field">
+          <view class="field-label">说明</view>
+          <textarea
+            class="quick-textarea"
+            value="{{form.description}}"
+            data-field="description"
+            bindinput="onInput"
+            maxlength="300"
+            placeholder="选填"
+          />
+        </view>
+      </block>
+
+      <block wx:elif="{{isPartsForm}}">
+        <view class="form-section">配件信息</view>
+
+        <view class="field">
+          <view class="field-label">配件名称 <text class="required">*</text></view>
+          <input value="{{form.serverProduct}}" data-field="serverProduct" bindinput="onInput" placeholder="例如：H100 GPU 模组 / 高速线缆 / 存储盘" />
+        </view>
+        <view class="field">
+          <view class="field-label">规格型号 <text class="required">*</text></view>
+          <input value="{{form.specModel}}" data-field="specModel" bindinput="onInput" maxlength="200" placeholder="例如：80G SXM5 / 400G DAC 3m / 3.84T NVMe" />
+        </view>
+        <view class="field">
+          <view class="field-label">数量 <text class="required">*</text></view>
+          <input value="{{form.scale}}" data-field="scale" bindinput="onInput" placeholder="例如：32 片 / 200 根 / 50 块" />
+        </view>
+        <view class="field">
+          <view class="field-label">报价 <text class="required">*</text></view>
+          <input value="{{form.price}}" data-field="price" bindinput="onInput" placeholder="例如：3.8 万/片 / 批量可谈" />
+        </view>
+        <view class="field">
+          <view class="field-label">交期 <text class="required">*</text></view>
+          <input value="{{form.deliveryTime}}" data-field="deliveryTime" bindinput="onInput" placeholder="例如：现货 / 7 天内发货 / 期货 2 周" />
+        </view>
+        <view class="field">
+          <view class="field-label">发货地点</view>
+          <input value="{{form.procurementRegion}}" data-field="procurementRegion" bindinput="onInput" maxlength="100" placeholder="选填，如：深圳保税仓" />
+        </view>
+        <view class="field">
+          <view class="field-label">质保</view>
+          <input value="{{form.warranty}}" data-field="warranty" bindinput="onInput" placeholder="例如：原厂质保 1 年" />
+        </view>
+      </block>
+
+      <block wx:else>
+      <view class="field">
+        <view class="field-label">资源规模 <text class="required">*</text></view>
+        <input value="{{form.scale}}" data-field="scale" bindinput="onInput" placeholder="例如：128 卡 / 50 个机柜" />
+      </view>
+
+      <view class="field">
+        <view class="field-label">价格说明 <text class="required">*</text></view>
+        <input value="{{form.price}}" data-field="price" bindinput="onInput" placeholder="例如：¥12/卡时 / 面议" />
+      </view>
+      </block>
+
+      <view class="form-section" wx:if="{{showSupplementSection && !isProxyMode}}">补充信息</view>
+      <view class="form-section" wx:if="{{showSupplementSection && isProxyMode}}">选填信息</view>
+
+      <block wx:if="{{isRentalForm && !isServerForm}}">
+        <view class="field">
+          <view class="field-label">租赁标的</view>
+          <input value="{{form.rentalSubject}}" data-field="rentalSubject" bindinput="onInput" placeholder="例如：GPU 算力 / IDC 机柜 / 带宽" />
+        </view>
+        <view class="field">
+          <view class="field-label">型号/规格</view>
+          <input value="{{form.specModel}}" data-field="specModel" bindinput="onInput" placeholder="例如：H800 80G / 8kW 高密机柜" />
+        </view>
+        <view class="field">
+          <view class="field-label">租期/周期</view>
+          <input value="{{form.cycle}}" data-field="cycle" bindinput="onInput" placeholder="例如：3 个月起租 / 按项目" />
+        </view>
+        <view class="field">
+          <view class="field-label">交付方式</view>
+          <picker mode="selector" range="{{deliveryOptions}}" bindchange="onDeliveryChange">
+            <view class="picker-value">{{form.delivery || "请选择交付方式"}}</view>
+          </picker>
+        </view>
+        <view class="field">
+          <view class="field-label">交付周期</view>
+          <input value="{{form.deliveryTime}}" data-field="deliveryTime" bindinput="onInput" placeholder="例如：7 天内开通 / 预约排期" />
+        </view>
+        <view class="field">
+          <view class="field-label">网络/配套</view>
+          <input value="{{form.networkSpec}}" data-field="networkSpec" bindinput="onInput" placeholder="例如：InfiniBand · 7×24 运维" />
+        </view>
+        <view class="field">
+          <view class="field-label">数据中心</view>
+          <input value="{{form.idcName}}" data-field="idcName" bindinput="onInput" placeholder="例如：华东 XX 智算数据中心（选填）" />
+        </view>
+        <view class="field">
+          <view class="field-label">机房等级</view>
+          <input value="{{form.idcLevel}}" data-field="idcLevel" bindinput="onInput" placeholder="例如：Tier3 / Tier4（选填）" />
+        </view>
+        <view class="field">
+          <view class="field-label">单柜功率</view>
+          <input value="{{form.cabinetPower}}" data-field="cabinetPower" bindinput="onInput" placeholder="例如：8kW/柜（选填）" />
+        </view>
+        <view class="field">
+          <view class="field-label">带宽资源</view>
+          <input value="{{form.bandwidth}}" data-field="bandwidth" bindinput="onInput" placeholder="例如：100G BGP（选填）" />
+        </view>
+      </block>
+
+      <block wx:elif="{{isMaintForm && !isServerForm}}">
+        <view class="field">
+          <view class="field-label">维保对象</view>
+          <input value="{{form.maintenanceTarget}}" data-field="maintenanceTarget" bindinput="onInput" placeholder="例如：GPU 集群 / 数据中心基础设施" />
+        </view>
+        <view class="field">
+          <view class="field-label">服务级别</view>
+          <input value="{{form.warranty}}" data-field="warranty" bindinput="onInput" placeholder="例如：7×24 · 4 小时响应" />
+        </view>
+        <view class="field">
+          <view class="field-label">服务范围</view>
+          <input value="{{form.serviceScope}}" data-field="serviceScope" bindinput="onInput" placeholder="例如：巡检 / 备件 / 驻场运维" />
+        </view>
+        <view class="field">
+          <view class="field-label">合作周期</view>
+          <input value="{{form.cycle}}" data-field="cycle" bindinput="onInput" placeholder="例如：年签 / 3 年起" />
+        </view>
+      </block>
+
+      <block wx:elif="{{isRoomBuildForm && !isServerForm}}">
+        <view class="field">
+          <view class="field-label">建设规模</view>
+          <input value="{{form.projectScale}}" data-field="projectScale" bindinput="onInput" placeholder="例如：2000 机柜 EPC 总包" />
+        </view>
+        <view class="field">
+          <view class="field-label">服务范围</view>
+          <input value="{{form.serviceScope}}" data-field="serviceScope" bindinput="onInput" placeholder="例如：设计+施工+液冷+运维系统" />
+        </view>
+        <view class="field">
+          <view class="field-label">项目周期</view>
+          <input value="{{form.deliveryTime}}" data-field="deliveryTime" bindinput="onInput" placeholder="例如：18 个月交付 / 分两期" />
+        </view>
+      </block>
+
+      <block wx:elif="{{isFinanceForm && !isServerForm}}">
+        <view class="field">
+          <view class="field-label">资金用途</view>
+          <input value="{{form.financePurpose}}" data-field="financePurpose" bindinput="onInput" placeholder="例如：机房建设 / 算力集群 / 设备分期" />
+        </view>
+        <view class="field">
+          <view class="field-label">资金规模</view>
+          <input value="{{form.financeScale}}" data-field="financeScale" bindinput="onInput" placeholder="例如：5000 万额度 / 单笔项目" />
+        </view>
+        <view class="field">
+          <view class="field-label">合作方式</view>
+          <input value="{{form.financeMode}}" data-field="financeMode" bindinput="onInput" placeholder="例如：融资租赁 / 保理 / 联合投资" />
+        </view>
+        <view class="field">
+          <view class="field-label">合作周期</view>
+          <input value="{{form.cycle}}" data-field="cycle" bindinput="onInput" placeholder="例如：3 年 / 按项目" />
+        </view>
+      </block>
+
+      <block wx:elif="{{isDcOpForm && !isServerForm}}">
+        <view class="field">
+          <view class="field-label">数据中心名称</view>
+          <input value="{{form.dcName}}" data-field="dcName" bindinput="onInput" placeholder="例如：西南 XX 数据中心" />
+        </view>
+        <view class="field">
+          <view class="field-label">服务内容</view>
+          <input value="{{form.serviceScope}}" data-field="serviceScope" bindinput="onInput" placeholder="例如：托管运维 / 节能优化 / 增值服务" />
+        </view>
+        <view class="field">
+          <view class="field-label">合作周期</view>
+          <input value="{{form.cycle}}" data-field="cycle" bindinput="onInput" placeholder="例如：年签 / 3 年起" />
+        </view>
+      </block>
+
+      <view class="field" wx:if="{{!isServerForm}}">
+        <view class="field-label">补充说明</view>
+        <textarea
+          class="quick-textarea"
+          value="{{form.description}}"
+          data-field="description"
+          bindinput="onInput"
+          maxlength="300"
+          placeholder="选填"
+        />
+      </view>
+
+      <view class="form-section">{{isProxyMode ? '客户联系信息' : '联系信息'}}</view>
+
+      <view class="field" wx:if="{{needCompany || isProxyMode}}">
+        <view class="field-label">{{isProxyMode ? '客户企业名称' : '企业名称'}} <text class="required">*</text></view>
+        <input value="{{form.company}}" data-field="company" bindinput="onInput" placeholder="请输入企业名称" />
+      </view>
+
+      <view class="field">
+        <view class="field-label">企业所在地</view>
+        <picker mode="selector" range="{{regionOptions}}" bindchange="onRegionChange">
+          <view class="picker-value">{{form.region || "选填"}}</view>
+        </picker>
+      </view>
+
+      <view class="field">
+        <view class="field-label">{{isProxyMode ? '客户联系人' : '联系人'}} <text class="required">*</text></view>
+        <input value="{{form.contact}}" data-field="contact" bindinput="onInput" placeholder="请输入联系人姓名" />
+      </view>
+
+      <view class="field" wx:if="{{isProxyMode || !phoneLocked}}">
+        <view class="field-label">{{isProxyMode ? '客户手机号' : '手机号'}}<text class="required" wx:if="{{!isProxyMode && !phoneLocked}}">*</text></view>
+        <input
+          value="{{form.phone}}"
+          data-field="phone"
+          bindinput="onInput"
+          type="number"
+          maxlength="11"
+          disabled="{{phoneLocked}}"
+          placeholder="{{isProxyMode ? '选填，用于客户登录与对接通知' : '用于联系，不公开展示'}}"
+        />
+      </view>
+
+      <view class="quick-phone-tip" wx:if="{{phoneLocked && !isProxyMode}}">
+        已绑定手机号 {{maskedPhone}}，撮合经理将通过此号码联系你
+      </view>
+    </block>
+
+    <block wx:elif="{{isConnectForm && !isResourceConnect}}">
+      <view class="form-section">申请方信息</view>
+      <view class="field">
+        <view class="field-label">企业名称 <text class="required">*</text></view>
+        <input value="{{form.company}}" data-field="company" bindinput="onInput" placeholder="请输入企业名称" />
+      </view>
+      <view class="field">
+        <view class="field-label">联系人 <text class="required">*</text></view>
+        <input value="{{form.contact}}" data-field="contact" bindinput="onInput" placeholder="请输入联系人" />
+      </view>
+      <view class="field">
+        <view class="field-label">手机号 <text class="required">*</text></view>
+        <input value="{{form.phone}}" data-field="phone" bindinput="onInput" type="number" disabled="{{phoneLocked}}" />
+      </view>
+
+      <view class="form-section">选择你的需求<text class="required" wx:if="{{connectUseDemand}}">*</text></view>
+      <view class="connect-mode-row">
+        <view class="connect-mode {{connectUseDemand ? 'active' : ''}}" bindtap="setConnectMode" data-mode="demand">关联已发布需求</view>
+        <view class="connect-mode {{!connectUseDemand ? 'active' : ''}}" bindtap="setConnectMode" data-mode="text">仅填写说明</view>
+      </view>
+
+      <block wx:if="{{connectUseDemand}}">
+        <view class="demand-option demand-option-create" bindtap="goPublishNewDemand">
+          <view class="demand-option-title">+ 快捷新建需求</view>
+          <view class="demand-option-meta">填写后将返回本页并自动关联到对接申请</view>
+        </view>
+        <view class="empty-connect" wx:if="{{ownDemands.length === 0}}">暂无已发布需求，可上方快捷新建，或切换为「仅填写说明」。</view>
+        <view
+          class="pool-card-v2 pool-card-v2-demand pool-card-v2-compact connect-pick-card {{selectedDemandId === item.id ? 'selected' : ''}}"
+          wx:for="{{ownDemands}}"
+          wx:key="id"
+          bindtap="selectOwnDemand"
+          data-id="{{item.id}}"
+          data-title="{{item.title}}"
+        >
+          <view class="pool-card-v2-head">
+            <view class="pool-card-v2-meta-left">
+              <text class="pool-card-v2-type">{{item.type}}</text>
+            </view>
+          </view>
+          <view class="pool-card-v2-title">{{item.title}}</view>
+          <view class="pool-card-v2-facts" wx:if="{{item.poolFacts.length}}">
+            <text class="pool-card-v2-fact" wx:for="{{item.poolFacts}}" wx:for-item="fact" wx:key="label">{{fact.icon}} {{fact.text}}</text>
+          </view>
+          <view class="pool-card-v2-summary" wx:if="{{item.poolSummaryLine}}">{{item.poolSummaryLine}}</view>
+        </view>
+        <view class="publish-quick-link" wx:if="{{ownDemands.length > 0}}" bindtap="goPublishNewDemand">没有合适的？去发布新需求 ›</view>
+      </block>
+
+      <view class="field" wx:if="{{!connectUseDemand}}">
+        <view class="field-label">对接说明 <text class="required">*</text></view>
+        <textarea value="{{form.description}}" data-field="description" bindinput="onInput" maxlength="300" placeholder="{{descriptionPlaceholder}}" />
+      </view>
+      <view class="field" wx:else>
+        <view class="field-label">补充说明（选填）</view>
+        <textarea value="{{form.description}}" data-field="description" bindinput="onInput" maxlength="300" placeholder="可补充合作意向、预算、交付节奏等" />
+      </view>
+    </block>
+
+    <block wx:elif="{{isResourceConnect}}">
+      <view class="limited-banner pending-banner" wx:if="{{isProxyConnectMode}}">
+        <view class="limited-banner-title">代发资源对接</view>
+        <view class="limited-banner-text">已关联代发资源，确认客户信息并填写补充说明后提交，流程与普通用户「我有匹配资源」一致。</view>
+      </view>
+      <view class="form-section">申请方信息</view>
+      <view class="field">
+        <view class="field-label">企业名称 <text class="required">*</text></view>
+        <input value="{{form.company}}" data-field="company" bindinput="onInput" placeholder="请输入企业名称" />
+      </view>
+      <view class="field">
+        <view class="field-label">联系人 <text class="required">*</text></view>
+        <input value="{{form.contact}}" data-field="contact" bindinput="onInput" placeholder="请输入联系人" />
+      </view>
+      <view class="field">
+        <view class="field-label">手机号 <text class="required">*</text></view>
+        <input value="{{form.phone}}" data-field="phone" bindinput="onInput" type="number" disabled="{{phoneLocked}}" />
+      </view>
+
+      <view class="form-section">选择你的资源<text class="required" wx:if="{{connectUseResource}}">*</text></view>
+      <view class="connect-mode-row" wx:if="{{!isProxyConnectMode}}">
+        <view class="connect-mode {{connectUseResource ? 'active' : ''}}" bindtap="setConnectMode" data-mode="resource">关联已发布资源</view>
+        <view class="connect-mode {{!connectUseResource ? 'active' : ''}}" bindtap="setConnectMode" data-mode="text">仅填写说明</view>
+      </view>
+
+      <block wx:if="{{connectUseResource}}">
+        <view class="demand-option demand-option-create" wx:if="{{!isProxyConnectMode}}" bindtap="goPublishNewResource">
+          <view class="demand-option-title">+ 快捷新建资源</view>
+          <view class="demand-option-meta">填写后将返回本页并自动关联到匹配申请</view>
+        </view>
+        <view class="empty-connect" wx:if="{{ownResources.length === 0}}">暂无已发布资源，可上方快捷新建，或切换为「仅填写说明」。</view>
+        <view
+          class="pool-card-v2 pool-card-v2-resource pool-card-v2-compact connect-pick-card {{selectedResourceId === item.id ? 'selected' : ''}} {{isProxyConnectMode ? 'preview-only' : ''}}"
+          wx:for="{{ownResources}}"
+          wx:key="id"
+          bindtap="selectOwnResource"
+          data-id="{{item.id}}"
+          data-title="{{item.title}}"
+        >
+          <view class="pool-card-v2-head">
+            <view class="pool-card-v2-meta-left">
+              <text class="pool-card-v2-type">{{item.type}}</text>
+            </view>
+          </view>
+          <view class="pool-card-v2-title">{{item.title}}</view>
+          <view class="pool-card-v2-facts" wx:if="{{item.poolFacts.length}}">
+            <text class="pool-card-v2-fact" wx:for="{{item.poolFacts}}" wx:for-item="fact" wx:key="label">{{fact.icon}} {{fact.text}}</text>
+          </view>
+          <view class="pool-card-v2-summary" wx:if="{{item.poolSummaryLine}}">{{item.poolSummaryLine}}</view>
+        </view>
+        <view class="publish-quick-link" wx:if="{{ownResources.length > 0 && !isProxyConnectMode}}" bindtap="goPublishNewResource">没有合适的？去发布新资源 ›</view>
+      </block>
+
+      <view class="field" wx:if="{{!connectUseResource}}">
+        <view class="field-label">匹配说明 <text class="required">*</text></view>
+        <textarea value="{{form.description}}" data-field="description" bindinput="onInput" maxlength="300" placeholder="{{descriptionPlaceholder}}" />
+      </view>
+      <view class="field" wx:else>
+        <view class="field-label">补充说明（选填）</view>
+        <textarea value="{{form.description}}" data-field="description" bindinput="onInput" maxlength="300" placeholder="可补充交付能力、价格区间、合作意向等" />
+      </view>
+    </block>
+
+    <block wx:else>
+      <view class="form-section">联系信息</view>
+
+      <view class="field">
+        <view class="field-label">企业名称 <text class="required">*</text></view>
+        <input value="{{form.company}}" data-field="company" bindinput="onInput" placeholder="请输入企业名称" />
+      </view>
+
+      <view class="field">
+        <view class="field-label">企业角色 <text class="required">*</text></view>
+        <picker mode="selector" range="{{roleOptions}}" bindchange="onRoleChange">
+          <view class="picker-value">{{form.role || "请选择"}}</view>
+        </picker>
+      </view>
+
+      <view class="field">
+        <view class="field-label">企业所在地</view>
+        <picker mode="selector" range="{{regionOptions}}" bindchange="onRegionChange">
+          <view class="picker-value">{{form.region || "选填"}}</view>
+        </picker>
+      </view>
+
+      <view class="field">
+        <view class="field-label">联系人 <text class="required">*</text></view>
+        <input value="{{form.contact}}" data-field="contact" bindinput="onInput" placeholder="请输入联系人姓名" />
+      </view>
+
+      <view class="field">
+        <view class="field-label">手机号 <text class="required">*</text></view>
+        <input
+          value="{{form.phone}}"
+          data-field="phone"
+          bindinput="onInput"
+          type="number"
+          maxlength="11"
+          disabled="{{phoneLocked}}"
+          placeholder="用于联系，不公开展示"
+        />
+        <view class="form-tip" wx:if="{{phoneLocked}}">已使用注册手机号，云端模式下身份与手机号绑定微信账号</view>
+      </view>
+
+      <view class="field">
+        <view class="field-label">{{descriptionLabel}} <text class="required">*</text></view>
+        <textarea value="{{form.description}}" data-field="description" bindinput="onInput" maxlength="300" placeholder="{{descriptionPlaceholder}}" />
+      </view>
+    </block>
+
+    <view class="public-display-row" wx:if="{{isQuickDemand || isQuickResource}}">
+      <view class="public-display-main">
+        <view class="public-display-title">对外公开展示</view>
+        <view class="public-display-tip">开启后，审核通过会在{{isQuickResource ? '资源' : '需求'}}池脱敏展示；关闭则仅你可在提交记录中查看。</view>
+      </view>
+      <switch checked="{{form.publicDisplay}}" bindchange="onPublicDisplayChange" color="#176b5b" />
+    </view>
+
+    <block wx:if="{{showAttachments}}">
+      <view class="form-section">附件材料</view>
+      <view class="form-tip">可上传配置单、方案书、资质证明等（最多 {{maxAttachments}} 个，不公开展示，仅供平台审核）。</view>
+      <view class="attachment-list">
+        <view class="attachment-item" wx:for="{{attachments}}" wx:key="id">
+          <view class="attachment-main" bindtap="previewAttachment" data-index="{{index}}">
+            <image class="attachment-thumb" wx:if="{{item.fileType === 'image'}}" src="{{item.url}}" mode="aspectFill" />
+            <view class="attachment-file" wx:else>📄</view>
+            <view class="attachment-name">{{item.name}}</view>
+          </view>
+          <view class="attachment-remove" bindtap="removeAttachment" data-id="{{item.id}}">删除</view>
+        </view>
+      </view>
+      <view class="attachment-add" bindtap="chooseAttachment" wx:if="{{attachments.length < maxAttachments}}">
+        <text class="attachment-add-icon">+</text>
+        <text>添加附件</text>
+      </view>
+    </block>
+  </view>
+
+  <view class="button-primary {{submitLocked ? 'disabled' : ''}}" bindtap="submitForm">{{submitDone ? '已提交' : (submitLocked ? '提交中...' : (needsCardCert ? certBlockedSubmitText : submitText))}}</view>
+  <view class="privacy-text" wx:if="{{isQuickResource || isQuickDemand}}">{{form.publicDisplay ? '提交后将在公开展示池脱敏展示；企业名称、联系人、手机号不会公开展示。' : '未开启公开展示时，提交后不会出现在资源/需求池，仅你可在提交记录中查看。'}}</view>
+  <view class="privacy-text" wx:elif="{{isConnectForm}}">{{isResourceConnect ? '提交后由需求方确认匹配信息，双方同意后可交换联系方式。' : '提交后由资源方确认对接信息，双方同意后可交换联系方式。'}}</view>
+  <view class="privacy-text" wx:else>提交后，平台撮合经理会根据你的信息进行人工审核和对接。</view>
+</view>

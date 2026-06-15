@@ -1,0 +1,6 @@
+<view class="page ops-page">
+  <view class="ops-tips card">
+    <view class="ops-tips-title">正在进入运营工作台</view>
+    <view class="ops-tips-item">请稍候，即将跳转到「我的」页…</view>
+  </view>
+</view>

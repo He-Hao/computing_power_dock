@@ -1,0 +1,11 @@
+<view class="page login-gate-page">
+  <view class="auth-gate">
+    <view class="auth-gate-icon gate-avatar-icon">访</view>
+    <view class="auth-gate-title">{{title}}</view>
+    <view class="auth-gate-text">{{text}}</view>
+    <view class="button-primary auth-gate-btn" bindtap="goLogin">去登录</view>
+    <view class="register-hint">
+      还没有账号？<text class="register-link" bindtap="goRegister">立即注册</text>
+    </view>
+  </view>
+</view>

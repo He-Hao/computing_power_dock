@@ -1,0 +1,5 @@
+<view class="page admin-page">
+  <view class="admin-empty">
+    <view class="admin-empty-title">正在返回运营工作台…</view>
+  </view>
+</view>

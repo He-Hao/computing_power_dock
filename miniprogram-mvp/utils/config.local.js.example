@@ -1,0 +1,11 @@
+// 复制本文件为 config.local.js，填入你的云环境 ID（不会被提交到 git）
+// 获取方式：微信开发者工具 → 云开发 → 设置 → 环境 ID（形如 cloud1-xxxx）
+
+module.exports = {
+  cloudEnvId: "cloud1-在这里填你的环境ID",
+  // 微信 getPhoneNumber 需小程序企业认证；认证后改为 true 并部署 getPhoneNumber 云函数
+  useWechatPhoneAuth: false,
+  // 用户服务协议 / 隐私政策（提交审核前请填写真实运营主体与联系邮箱）
+  legalOperatorName: "您的公司全称",
+  legalContactEmail: "privacy@example.com"
+}

@@ -1,0 +1,118 @@
+<view class="page pool-page page-tab">
+  <view class="pool-query-zone">
+    <view class="pool-query-card">
+      <view class="pool-v2-toolbar">
+        <view class="search-box">
+          <text class="search-icon">🔍</text>
+          <input value="{{keyword}}" bindinput="onSearch" bindconfirm="onSearchConfirm" placeholder="搜索 GPU、整机，或编号 URES-" />
+        </view>
+        <view class="pool-v2-filter-btn {{filterActiveCount > 0 ? 'has-active' : ''}}" bindtap="openFilterDrawer">
+          更多<text wx:if="{{filterActiveCount > 0}}"> · {{filterActiveCount}}</text>
+        </view>
+      </view>
+
+      <view class="filter-label pool-v2-filter-label">资源类型</view>
+      <scroll-view scroll-x class="filter-scroll pool-v2-type-row" enhanced show-scrollbar="{{false}}">
+        <view class="filter-scroll-inner">
+          <view class="filter-chip {{activeType === '全部' ? 'active' : ''}}" bindtap="setType" data-type="全部">全部</view>
+          <view class="filter-chip {{activeType === item.value ? 'active' : ''}}" wx:for="{{typeFilterChips}}" wx:key="value" bindtap="setType" data-type="{{item.value}}">{{item.label}}</view>
+        </view>
+      </scroll-view>
+
+      <view class="filter-label pool-v2-filter-label">快捷筛选</view>
+      <scroll-view scroll-x class="filter-scroll pool-v2-quick-row" enhanced show-scrollbar="{{false}}">
+        <view class="filter-scroll-inner">
+          <view class="filter-chip {{activeFavorite === 'favorite' ? 'active' : ''}}" bindtap="toggleQuickFavorite">我的收藏</view>
+          <view class="filter-chip {{activeCert === 'license' ? 'active' : ''}}" bindtap="toggleQuickLicense">执照认证</view>
+          <view class="filter-chip {{activeTime === '24h' ? 'active' : ''}}" bindtap="toggleQuickDay">24 小时内</view>
+          <view class="filter-chip {{activeTime === '7d' ? 'active' : ''}}" bindtap="toggleQuickWeek">7 天内</view>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <view class="pool-list-zone">
+    <view class="pool-v2-list-toolbar">
+      <view class="pool-v2-result-count">共 {{filteredCount}} 条资源</view>
+      <view class="pool-v2-sort-track">
+        <view class="pool-v2-sort-item {{sortBy === item.value ? 'active' : ''}}" wx:for="{{sortOptions}}" wx:key="value" bindtap="setSort" data-sort="{{item.value}}">{{item.shortLabel}}</view>
+      </view>
+    </view>
+
+    <view class="pool-list-body {{items.length === 0 ? 'is-empty' : ''}}">
+      <block wx:for="{{items}}" wx:key="id">
+        <view class="pool-card-v2 pool-card-v2-resource {{newItemsStartIndex >= 0 && index >= newItemsStartIndex ? 'list-item-enter' : ''}}" bindtap="goDetail" data-id="{{item.id}}">
+          <view class="pool-card-v2-head">
+            <view class="pool-card-v2-meta-left">
+              <text class="pool-card-v2-type">{{item.type}}</text>
+              <text class="pool-card-v2-badge {{item.displayProxyBadge.badgeClass}}" wx:if="{{item.displayProxyBadge}}">{{item.displayProxyBadge.text}}</text>
+              <text class="pool-card-v2-badge" wx:if="{{item.displayCertBadge}}">{{item.displayCertBadge.text}}</text>
+              <text class="pool-card-v2-status {{item.browseStatusClass}}" wx:if="{{item.browseStatus}}">{{item.browseStatus}}</text>
+              <text class="pool-card-v2-status" wx:elif="{{item.isOwnListing}}">我的</text>
+            </view>
+            <view class="pool-card-v2-star {{item.isFavorited ? 'active' : ''}}" catchtap="toggleFavorite" data-id="{{item.id}}">
+              <text class="favorite-glyph">{{item.isFavorited ? '★' : '☆'}}</text>
+            </view>
+          </view>
+          <view class="pool-card-v2-title">{{item.title}}</view>
+          <view class="pool-card-v2-facts" wx:if="{{item.poolFacts.length}}">
+            <text class="pool-card-v2-fact" wx:for="{{item.poolFacts}}" wx:for-item="fact" wx:key="label">{{fact.icon}} {{fact.text}}</text>
+          </view>
+          <view class="pool-card-v2-summary" wx:if="{{item.poolSummaryLine}}">{{item.poolSummaryLine}}</view>
+          <view class="pool-card-v2-foot">
+            <text class="pool-card-v2-time">{{item.poolTimeLabel}}</text>
+            <view class="pool-card-v2-action done" wx:if="{{item.showConnectAction && item.hasConnectApplied}}" catchtap="viewConnectRecord" data-record-id="{{item.connectRecordId}}">已申请 ✓</view>
+            <view class="pool-card-v2-action" wx:elif="{{item.showConnectAction}}" catchtap="applyConnect" data-id="{{item.id}}">申请对接</view>
+            <text class="pool-card-v2-link" wx:else>查看详情 ›</text>
+          </view>
+        </view>
+      </block>
+      <view class="empty" wx:if="{{items.length === 0}}">
+        {{activeFavorite === 'favorite' ? '暂无收藏资源，浏览列表时可点星标收藏。' : '暂无符合条件的资源，可提交需求由平台推荐。'}}
+      </view>
+      <list-pagination-foot
+        total="{{filteredCount}}"
+        loading="{{loadingMore}}"
+        has-more="{{hasMoreDisplay || cloudHasMore}}"
+      />
+    </view>
+  </view>
+
+  <view class="fab {{registered ? '' : 'fab-guest'}}" wx:if="{{!staffPoolPublishBlocked}}" bindtap="goPublish">+</view>
+
+  <view class="pool-drawer-mask" wx:if="{{filterDrawerOpen}}" bindtap="closeFilterDrawer"></view>
+  <view class="pool-drawer {{filterDrawerOpen ? 'open' : ''}}">
+    <view class="pool-drawer-head">
+      <text class="pool-drawer-title">更多筛选</text>
+      <text class="pool-drawer-close" bindtap="closeFilterDrawer">关闭</text>
+    </view>
+    <view class="filter-label">发布时间</view>
+    <scroll-view scroll-x class="filter-scroll" enhanced show-scrollbar="{{false}}">
+      <view class="filter-scroll-inner">
+        <view class="filter-chip {{activeTime === item.value ? 'active' : ''}}" wx:for="{{timeFilterOptions}}" wx:key="value" bindtap="setTimeFilter" data-value="{{item.value}}">{{item.label}}</view>
+      </view>
+    </scroll-view>
+    <view class="filter-label">交期类型</view>
+    <scroll-view scroll-x class="filter-scroll" enhanced show-scrollbar="{{false}}">
+      <view class="filter-scroll-inner">
+        <view class="filter-chip {{activeDeliveryKind === item.value ? 'active' : ''}}" wx:for="{{deliveryKindFilterOptions}}" wx:key="value" bindtap="setDeliveryKindFilter" data-value="{{item.value}}">{{item.label}}</view>
+      </view>
+    </scroll-view>
+    <view class="filter-label">浏览状态</view>
+    <scroll-view scroll-x class="filter-scroll" enhanced show-scrollbar="{{false}}">
+      <view class="filter-scroll-inner">
+        <view class="filter-chip {{activeBrowse === item.value ? 'active' : ''}}" wx:for="{{browseFilterOptions}}" wx:key="value" bindtap="setBrowseFilter" data-value="{{item.value}}">{{item.label}}</view>
+      </view>
+    </scroll-view>
+    <view class="filter-label">企业所在地</view>
+    <scroll-view scroll-x class="filter-scroll" enhanced show-scrollbar="{{false}}">
+      <view class="filter-scroll-inner">
+        <view class="filter-chip {{activeRegion === item ? 'active' : ''}}" wx:for="{{regionOptions}}" wx:key="*this" bindtap="setRegion" data-region="{{item}}">{{item}}</view>
+      </view>
+    </scroll-view>
+    <view class="pool-drawer-foot">
+      <view class="pool-drawer-reset" bindtap="resetAdvancedFilters">重置</view>
+      <view class="pool-drawer-apply" bindtap="closeFilterDrawer">完成</view>
+    </view>
+  </view>
+</view>

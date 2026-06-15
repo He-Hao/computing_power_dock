@@ -1,0 +1,10 @@
+{
+  "navigationBarTitleText": "需求池",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark",
+  "onReachBottomDistance": 120,
+  "usingComponents": {
+    "list-pagination-foot": "/components/list-pagination-foot/list-pagination-foot"
+  }
+}
+

@@ -1,0 +1,37 @@
+<view class="page cert-records-page">
+  <view class="empty" wx:if="{{records.length === 0}}">
+    暂无认证审批记录。提交企业认证后，可在这里查看审核进度。
+  </view>
+
+  <block wx:for="{{records}}" wx:key="id">
+    <view class="card record-card {{newItemsStartIndex >= 0 && index >= newItemsStartIndex ? 'list-item-enter' : ''}}">
+      <view class="record-card-head">
+        <view class="record-tags">
+          <text class="tag">{{item.certLevelName}}</text>
+          <text class="status-badge {{item.statusBadgeClass}}">{{item.displayStatus}}</text>
+        </view>
+        <text class="muted record-time">{{item.relativeTime}}</text>
+      </view>
+
+      <view class="record-card-title">{{item.cardTitle}}</view>
+      <view class="muted record-summary" wx:if="{{item.summaryLine}}">{{item.summaryLine}}</view>
+
+      <view class="record-timeline" wx:if="{{item.miniTimeline.length > 0}}">
+        <block wx:for="{{item.miniTimeline}}" wx:for-item="step" wx:key="label">
+          <text class="record-dot {{step.dotState}}"></text>
+          <text>{{step.label}}</text>
+          <text class="record-timeline-sep" wx:if="{{index < item.miniTimeline.length - 1}}">—</text>
+        </block>
+      </view>
+
+      <view class="record-actions">
+        <view class="btn-ghost" catchtap="goRecord" data-id="{{item.id}}">查看审批详情</view>
+      </view>
+    </view>
+  </block>
+  <list-pagination-foot
+    total="{{filteredCount}}"
+    loading="{{loadingMore}}"
+    has-more="{{hasMoreDisplay}}"
+  />
+</view>

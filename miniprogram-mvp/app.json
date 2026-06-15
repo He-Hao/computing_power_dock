@@ -1,0 +1,62 @@
+{
+  "lazyCodeLoading": "requiredComponents",
+  "pages": [
+    "pages/home/home",
+    "pages/resources/resources",
+    "pages/demands/demands",
+    "pages/detail/detail",
+    "pages/submit/submit",
+    "pages/resource-connect/resource-connect",
+    "pages/register/register",
+    "pages/login/login",
+    "pages/change-password/change-password",
+    "pages/login-gate/login-gate",
+    "pages/onboard/onboard",
+    "pages/certify/certify",
+    "pages/process/process",
+    "pages/legal/legal",
+    "pages/mine/mine",
+    "pages/records/records",
+    "pages/record/record",
+    "pages/cert-records/cert-records",
+    "pages/cert-record/cert-record",
+    "pages/favorite-pool/favorite-pool",
+    "pages/platform-ops/platform-ops",
+    "pages/ops-proxy/ops-proxy",
+    "pages/ops-connects/ops-connects",
+    "pages/ops-connect-detail/ops-connect-detail",
+    "pages/admin/admin",
+    "pages/admin-review/admin-review",
+    "pages/admin-governance/admin-governance"
+  ],
+  "window": {
+    "navigationBarTitleText": "算力码头",
+    "navigationBarBackgroundColor": "#101820",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#F5F7FA"
+  },
+  "tabBar": {
+    "color": "#68717D",
+    "selectedColor": "#176B5B",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/home/home",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/resources/resources",
+        "text": "资源"
+      },
+      {
+        "pagePath": "pages/demands/demands",
+        "text": "需求"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的"
+      }
+    ]
+  }
+}

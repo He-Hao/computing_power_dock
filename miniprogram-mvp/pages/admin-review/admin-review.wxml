@@ -1,0 +1,91 @@
+<view class="page" wx:if="{{item}}">
+  <view class="hero-card">
+    <view class="hero-kicker">待审详情</view>
+    <view class="hero-title">{{item.typeName}}</view>
+    <view class="hero-status">{{item.statusText}}</view>
+    <view class="hero-text">{{item.title}}</view>
+    <view class="hero-time">提交时间：{{item.createdAt}}</view>
+  </view>
+
+  <view class="card">
+    <view class="section-title compact">申请方信息</view>
+    <view class="review-row"><text class="label">企业</text><text>{{item.company || '未填写'}}</text></view>
+    <view class="review-row" wx:if="{{item.showApplicantRegionRole}}"><text class="label">角色</text><text>{{item.role || '未填写'}}</text></view>
+    <view class="review-row"><text class="label">联系人</text><text>{{item.contact || '未填写'}}</text></view>
+    <view class="review-row"><text class="label">手机号</text><text>{{item.phone || '未填写'}}</text></view>
+    <view class="review-row" wx:if="{{item.showApplicantRegionRole}}"><text class="label">企业所在地</text><text>{{item.region || '未填写'}}</text></view>
+  </view>
+
+  <view class="card" wx:if="{{item.summary}}">
+    <view class="section-title compact">申请摘要</view>
+    <view class="review-summary">{{item.summary}}</view>
+  </view>
+
+  <view class="card" wx:if="{{item.isProxyConnectReview && item.proxyInfo}}">
+    <view class="section-title compact">代发信息</view>
+    <view class="review-row"><text class="label">代发类型</text><text>{{item.proxyInfo.proxySide || '代发商机'}}</text></view>
+    <view class="review-row"><text class="label">代发商机</text><text>{{item.proxyInfo.proxyListingTitle || '未关联'}}</text></view>
+    <view class="review-row"><text class="label">代发客户</text><text>{{item.proxyInfo.proxyClientPhone || '未填写'}}</text></view>
+    <view class="review-row" wx:if="{{item.proxyInfo.proxyStaffPhone}}"><text class="label">代发运营</text><text>{{item.proxyInfo.proxyStaffPhone}}</text></view>
+    <view class="review-row"><text class="label">申请来源</text><text>{{item.proxyInfo.applyType || '第三方申请对接'}}</text></view>
+  </view>
+
+  <view class="card" wx:if="{{item.isConnectReview && item.connectParties.length > 0}}">
+    <view class="section-title compact">对接双方</view>
+    <view class="party-card" wx:for="{{item.connectParties}}" wx:key="partyRole">
+      <view class="party-head">
+        <view class="party-side">{{item.side}}</view>
+      </view>
+      <view class="party-title">{{item.title}}</view>
+      <view class="party-meta" wx:if="{{item.type}}">{{item.type}} · {{item.region}}</view>
+      <view class="party-meta">{{item.company}} · {{item.contact}} · {{item.phone}}</view>
+      <view class="party-summary" wx:if="{{item.summary}}">{{item.summary}}</view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{item.attachments.length > 0}}">
+    <view class="section-title compact">提交附件</view>
+    <view class="cert-image-loading" wx:if="{{imagesLoading}}">正在加载附件图片…</view>
+    <view class="cert-image-error" wx:if="{{imageResolveError}}" bindtap="loadReview">{{imageResolveError}} 点击重试</view>
+    <view class="cert-image-block" wx:for="{{item.attachments}}" wx:key="label">
+      <view class="cert-image-label">{{item.label}}</view>
+      <image wx:if="{{item.fileType === 'image' && !item.unavailable && (item.displayUrl || item.url)}}" class="cert-image" src="{{item.displayUrl || item.url}}" mode="aspectFill" bindtap="previewCertImage" data-url="{{item.displayUrl || item.url}}" />
+      <view class="cert-image-missing" wx:elif="{{item.fileType === 'image' && item.unavailable}}">{{item.unavailableHint || '图片暂不可查看'}}</view>
+      <view class="review-row" wx:else><text class="label">文件</text><text>{{item.label}}</text></view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{item.certImages.length > 0}}">
+    <view class="section-title compact">认证材料</view>
+    <view class="cert-image-loading" wx:if="{{imagesLoading}}">正在加载认证图片…</view>
+    <view class="cert-image-error" wx:if="{{imageResolveError}}" bindtap="loadReview">{{imageResolveError}} 点击重试</view>
+    <view class="cert-image-block" wx:for="{{item.certImages}}" wx:key="label">
+      <view class="cert-image-label">{{item.label}}</view>
+      <image wx:if="{{!item.unavailable && (item.displayUrl || item.url)}}" class="cert-image" src="{{item.displayUrl || item.url}}" mode="aspectFill" bindtap="previewCertImage" data-url="{{item.displayUrl || item.url}}" />
+      <view class="cert-image-missing" wx:else>{{item.unavailableHint || '认证图片未上传至云端，请联系申请人重新提交'}}</view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{item.fields.length > 0}}">
+    <view class="section-title compact">业务详情</view>
+    <view class="review-row" wx:for="{{item.fields}}" wx:key="label">
+      <text class="label">{{item.label}}</text>
+      <text class="value">{{item.value}}</text>
+    </view>
+  </view>
+
+  <view class="card notice-card">
+    <view class="notice-title">审核说明</view>
+    <view class="notice-text" wx:if="{{item.isProxyConnectReview}}">请核对代发商机与对接双方信息。批准后进入「待对方确认」，由资源方或需求方确认是否愿意沟通；驳回将关闭该对接申请。</view>
+    <view class="notice-text" wx:else>请核对申请方身份、业务信息真实性和完整度。通过后继续公示或进入后续撮合；驳回将通知用户并下架相关内容。</view>
+  </view>
+
+  <view class="action-bar">
+    <view class="button-secondary reject-btn {{reviewLoading ? 'btn-busy' : ''}}" bindtap="rejectReview">{{reviewLoading === 'reject' ? '处理中...' : (item.isProxyConnectReview ? '驳回对接' : '驳回')}}</view>
+    <view class="button-primary approve-btn {{reviewLoading ? 'btn-busy' : ''}}" bindtap="approveReview">{{reviewLoading === 'approve' ? '处理中...' : (item.isProxyConnectReview ? '批准对接' : '通过审核')}}</view>
+  </view>
+</view>
+
+<view class="page" wx:else>
+  <view class="empty">没有找到待审核内容</view>
+</view>

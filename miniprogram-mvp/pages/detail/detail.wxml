@@ -1,0 +1,325 @@
+<view class="page detail-page {{showBottomBar ? 'has-fixed-bar' : ''}}" wx:if="{{item}}">
+  <view class="limited-banner pending-banner" wx:if="{{item.isUserPublished && item.verification === '待审核' && isPublisher && !isStaffProxyView}}">
+    <view class="limited-banner-title">平台审核中</view>
+    <view class="limited-banner-text" wx:if="{{item.publicDisplay !== false}}">审核通过后才会在{{isResource ? '资源' : '需求'}}池公开展示，目前仅你可见此预览。</view>
+    <view class="limited-banner-text" wx:else>审核通过后不会公开展示，目前仅你可见此预览。</view>
+  </view>
+
+  <view class="limited-banner pending-banner" wx:if="{{isStaffOversight && !isMatchPreview && !isConnectPreview}}">
+    <view class="limited-banner-title">{{isResource ? '资源' : '需求'}}预览</view>
+    <view class="limited-banner-text">来自全局对接监管，仅预览商机内容，不进入匹配或对接流程。</view>
+  </view>
+
+  <view class="limited-banner pending-banner" wx:if="{{isMatchPreview}}">
+    <view class="limited-banner-title">匹配预览</view>
+    <view class="limited-banner-text">仅预览关联商机，不会继续跳转匹配链。{{matchAnchorTitle ? '来自：' + matchAnchorTitle : ''}}</view>
+    <view class="match-preview-back" bindtap="goBackToMatchAnchor">返回{{isResource ? '资源' : '需求'}}详情 ›</view>
+  </view>
+
+  <view class="limited-banner pending-banner" wx:if="{{isConnectPreview}}">
+    <view class="limited-banner-title">对接预览</view>
+    <view class="limited-banner-text">仅预览关联商机，不会继续跳转对接流程。{{connectPreviewTitle ? '来自：' + connectPreviewTitle : ''}}</view>
+    <view class="match-preview-back" bindtap="goBackToConnectRecord">返回对接记录 ›</view>
+  </view>
+
+  <block wx:if="{{listingLayout}}">
+    <view class="res-section">
+      <view class="res-section-head">{{listingLayout.heroSectionTitle || '整体说明'}}</view>
+      <view class="pool-card-v2 {{isResource ? 'pool-card-v2-resource' : 'pool-card-v2-demand'}} pool-card-v2-detail {{listingLayout.layoutMode === 'structured' ? 'pool-card-v2-detail-structured' : ''}}">
+        <view class="pool-card-v2-head">
+          <view class="pool-card-v2-meta-left">
+            <text class="pool-card-v2-type">{{item.type}}</text>
+            <text class="pool-card-v2-badge {{displayProxyBadge.badgeClass}}" wx:if="{{displayProxyBadge}}">{{displayProxyBadge.text}}</text>
+            <text class="pool-card-v2-badge" wx:if="{{displayCertBadge && !isStaffProxyView && !verificationView}}">{{displayCertBadge.text}}</text>
+            <text class="pool-card-v2-status" wx:if="{{!isResource && item.isUserPublished && item.verification === '待审核'}}">待审</text>
+          </view>
+          <view class="pool-card-v2-star {{isFavorited ? 'active' : ''}}" bindtap="toggleFavorite">
+            <text class="favorite-glyph">{{isFavorited ? '★' : '☆'}}</text>
+          </view>
+        </view>
+        <view class="pool-card-v2-title detail-card-title">{{item.title}}</view>
+        <view class="pool-card-v2-facts" wx:if="{{listingLayout.poolFacts.length > 0}}">
+          <text class="pool-card-v2-fact" wx:for="{{listingLayout.poolFacts}}" wx:for-item="fact" wx:key="label">{{fact.icon}} {{fact.text}}</text>
+        </view>
+        <view class="detail-tag-row" wx:if="{{listingLayout.displayTags.length > 0}}">
+          <text class="detail-tag" wx:for="{{listingLayout.displayTags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>
+        </view>
+        <view class="detail-highlight-row" wx:if="{{listingLayout.layoutMode !== 'structured' && detailHighlights.length > 0}}">
+          <text class="detail-highlight" wx:for="{{detailHighlights}}" wx:for-item="point" wx:key="*this">{{point}}</text>
+        </view>
+        <view class="detail-summary" wx:if="{{listingLayout.heroSummary}}">{{listingLayout.heroSummary}}</view>
+        <view class="detail-key-metrics" wx:if="{{listingLayout.keyMetrics.length > 0 && listingLayout.poolFacts.length === 0}}">
+          <view class="detail-key-metric" wx:for="{{listingLayout.keyMetrics}}" wx:for-item="metric" wx:key="label">
+            <view class="detail-key-metric-icon">{{metric.icon}}</view>
+            <view class="detail-key-metric-label">{{metric.label}}</view>
+            <view class="detail-key-metric-value">{{metric.value}}</view>
+          </view>
+        </view>
+        <view class="detail-meta-row" wx:if="{{itemId || (item.poolTimeLabel && !listingLayout.hideHeroTime)}}">
+          <text
+            class="detail-meta-id copyable-id"
+            wx:if="{{itemId}}"
+            bindlongpress="copyTradeId"
+            data-text="{{itemId}}"
+          >编号：{{itemId}}</text>
+          <text class="detail-meta-time" wx:if="{{item.poolTimeLabel && !listingLayout.hideHeroTime}}">{{item.poolTimeLabel}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="res-section" wx:if="{{listingLayout.specRows.length > 0 || (isResource && hasListingAttachments)}}">
+      <view class="res-section-head">{{listingLayout.specSectionTitle || '补充信息'}}</view>
+      <view class="card res-spec-card" wx:if="{{listingLayout.specRows.length > 0}}">
+        <view class="res-spec-row" wx:for="{{listingLayout.specRows}}" wx:key="label">
+          <view class="res-spec-label">{{item.label}}</view>
+          <view class="res-spec-value">
+            <text wx:if="{{item.deliveryKindTag}}">{{item.deliveryKindTag}}{{item.value ? ' ' + item.value : ''}}</text>
+            <text wx:elif="{{item.value}}">{{item.value}}</text>
+          </view>
+        </view>
+      </view>
+      <view class="card res-attach-lock" wx:if="{{isResource && hasListingAttachments && !canViewAttachments}}" bindtap="goCertifyForAttachments">
+        <text class="res-attach-lock-icon">🔒</text>
+        <text>营业执照认证后可查看配置单等材料</text>
+      </view>
+      <view class="card res-attach-card" wx:elif="{{isResource && hasListingAttachments && listingAttachments.length > 0}}">
+        <view class="attachment-list">
+          <view class="attachment-item" wx:for="{{listingAttachments}}" wx:key="id">
+            <view class="attachment-main" bindtap="previewAttachment" data-index="{{index}}">
+              <image class="attachment-thumb" wx:if="{{item.fileType === 'image'}}" src="{{item.displayUrl || item.url}}" mode="aspectFill" />
+              <view class="attachment-file" wx:else>📄</view>
+              <view class="attachment-name">{{item.name}}</view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="res-section" wx:if="{{verificationView}}">
+      <view class="res-section-head">{{verificationView.title}}</view>
+      <view class="card res-verification-card">
+        <view class="res-spec-row" wx:for="{{verificationView.rows}}" wx:key="label">
+          <view class="res-spec-label">{{item.label}}</view>
+          <view class="res-spec-value">{{item.value}}</view>
+        </view>
+      </view>
+      <view class="detail-report-row" wx:if="{{canReportListing}}">
+        <text class="detail-report-link {{reportLoading ? 'btn-busy' : ''}}" bindtap="reportListing">{{reportLoading ? '提交中...' : '举报虚假信息'}}</text>
+      </view>
+    </view>
+
+    <view class="res-section" wx:if="{{publisherInfo}}">
+      <view class="res-section-head">{{isResource ? '发布方' : '需求方'}}</view>
+      <view class="card res-publisher-card">
+        <view class="res-publisher-row">
+          <view class="publisher-avatar">{{publisherInfo.avatarText}}</view>
+          <view class="res-publisher-main">
+            <view class="publisher-name">{{publisherInfo.company}}</view>
+            <view class="publisher-badges" wx:if="{{publisherInfo.badge}}">
+              <view class="publisher-badge {{publisherInfo.badge.badgeClass}}">{{publisherInfo.badge.text}}</view>
+            </view>
+            <view class="publisher-contact-inline" wx:if="{{publisherInfo.contact || publisherInfo.phoneDisplay}}">
+              <text wx:if="{{publisherInfo.contact}}">{{publisherInfo.contact}}</text>
+              <text wx:if="{{publisherInfo.contact && publisherInfo.phoneDisplay}}"> · </text>
+              <text class="{{publisherInfo.publisherMasked ? 'contact-mask' : 'publisher-phone-inline'}}" wx:if="{{publisherInfo.phoneDisplay}}">{{publisherInfo.phoneDisplay}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <view class="res-section proxy-detail-shell" wx:if="{{isStaffProxyView && proxyClientForm && !fromShare}}">
+    <view class="res-section-head">客户信息</view>
+    <view class="card proxy-client-card">
+      <view class="proxy-client-card-head">
+        <text class="proxy-client-cert-badge {{proxyClientForm.certClass}}">{{proxyClientForm.certLabel}}</text>
+      </view>
+      <view class="res-spec-card proxy-spec-card">
+        <view class="res-spec-row">
+          <view class="res-spec-label">企业名称</view>
+          <view class="res-spec-value">{{proxyClientForm.company}}</view>
+        </view>
+        <view class="res-spec-row">
+          <view class="res-spec-label">联系人</view>
+          <view class="res-spec-value">{{proxyClientForm.contact}}</view>
+        </view>
+        <view class="res-spec-row">
+          <view class="res-spec-label">手机号</view>
+          <view class="res-spec-value">{{proxyClientForm.phoneDisplay}}</view>
+        </view>
+        <view class="res-spec-row" wx:if="{{proxyClientForm.role}}">
+          <view class="res-spec-label">企业角色</view>
+          <view class="res-spec-value">{{proxyClientForm.role}}</view>
+        </view>
+        <view class="res-spec-row">
+          <view class="res-spec-label">商机类型</view>
+          <view class="res-spec-value">{{proxyClientForm.poolTypeLabel}}</view>
+        </view>
+        <view class="res-spec-row">
+          <view class="res-spec-label">审核状态</view>
+          <view class="res-spec-value">
+            <text class="proxy-status-pill {{proxyClientForm.statusClass}}">{{proxyClientForm.statusLabel}}</text>
+          </view>
+        </view>
+      </view>
+      <view class="proxy-client-cert-hint" wx:if="{{proxyClientCertHint}}">{{proxyClientCertHint}}</view>
+    </view>
+  </view>
+
+  <view class="res-section owner-manage-section" wx:if="{{canManageListing}}">
+    <view class="res-section-head">商机管理</view>
+
+    <view class="owner-subsection">
+      <view class="match-pick-tip" wx:if="{{linkedConnectPending > 0}}">有 {{linkedConnectPending}} 条对接待您处理，请点击查看并操作。</view>
+      <view class="owner-empty-tip" wx:if="{{linkedConnects.length === 0 && !sourceListingClosed && !isStaffProxyView}}">暂无匹配记录。</view>
+      <view class="owner-empty-tip" wx:elif="{{linkedConnects.length === 0 && !sourceListingClosed && isStaffProxyView}}">暂无对接记录</view>
+      <view class="owner-empty-tip" wx:elif="{{linkedConnects.length === 0 && sourceListingClosed}}">该商机已关闭，不再支持发起对接；历史匹配记录见上方。</view>
+      <view class="card linked-connects-card" wx:else>
+        <view
+          class="linked-connect-item"
+          wx:for="{{linkedConnects}}"
+          wx:key="id"
+          bindtap="goConnectRecord"
+          data-id="{{item.id}}"
+        >
+          <view class="linked-connect-item-head">
+            <view class="linked-connect-item-title">{{item.title}}</view>
+            <text class="status-badge {{item.statusBadgeClass}}">{{item.statusLabel || item.displayStatus}}</text>
+          </view>
+          <view class="linked-connect-item-meta">
+            <text class="linked-pending-tag {{item.pendingBadgeClass}}" wx:if="{{item.pendingLabel}}">{{item.pendingLabel}}</text>
+            <text class="muted linked-pending-hint" wx:if="{{item.pendingHint}}">{{item.pendingHint}}</text>
+            <text class="muted">{{item.relativeTime}}</text>
+          </view>
+          <view class="muted linked-connect-item-summary" wx:if="{{item.summaryLine}}">{{item.summaryLine}}</view>
+          <view class="linked-connect-item-action">查看对接详情 ›</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="owner-subsection proxy-match-bottom" wx:if="{{showMatchPickerSection}}">
+      <view class="match-picker-head-row proxy-match-head-row">
+        <view class="owner-subsection-head proxy-match-head">{{isProxyResourceConnectPicker ? '匹配需求' : '匹配资源'}}</view>
+        <view
+          class="match-picker-switch"
+          wx:if="{{matchPickerHasSmart}}"
+          bindtap="toggleMatchPickerView"
+        >{{matchPickerView === 'manual' ? '看推荐' : '搜索'}}</view>
+      </view>
+      <view class="match-manual-search-wrap" wx:if="{{matchPickerView === 'manual'}}">
+        <input
+          class="match-manual-search"
+          value="{{matchManualKeyword}}"
+          bindinput="onManualMatchSearch"
+          placeholder="{{matchManualSearchPlaceholder}}"
+          confirm-type="search"
+        />
+      </view>
+      <view class="owner-empty-tip" wx:if="{{matchPickerItems.length === 0}}">{{matchPickerEmptyTip}}</view>
+      <block wx:if="{{matchPickerItems.length > 0}}">
+          <view
+            class="pool-card-v2 {{isProxyResourceConnectPicker ? 'pool-card-v2-demand' : 'pool-card-v2-resource'}} pool-card-v2-compact match-pick-card {{item.matchSelected ? 'selected' : ''}} {{item.matchAlreadyLinked ? 'linked' : ''}} {{item.matchPreviewOnly ? 'preview-only' : ''}}"
+            wx:for="{{matchPickerItems}}"
+            wx:key="id"
+          >
+            <view
+              class="match-pick-row"
+              catchtap="{{item.matchPreviewOnly ? 'goRelated' : 'toggleMatchSelect'}}"
+              data-id="{{item.id}}"
+            >
+              <view
+                class="match-check-box {{item.matchPreviewOnly ? 'is-preview-only' : ''}}"
+                data-id="{{item.id}}"
+              >
+                <text class="match-check-icon" wx:if="{{item.matchPreviewOnly}}">👁</text>
+                <text class="match-check-icon" wx:elif="{{item.matchAlreadyLinked}}">✓</text>
+                <text class="match-check-icon" wx:else>{{item.matchSelected ? '☑' : '☐'}}</text>
+              </view>
+              <view class="match-pick-body">
+                <view class="pool-card-v2-head">
+                  <view class="pool-card-v2-meta-left">
+                    <text class="pool-card-v2-type">{{item.type}}</text>
+                    <text class="pool-card-v2-badge {{item.displayProxyBadge.badgeClass}}" wx:if="{{item.displayProxyBadge}}">{{item.displayProxyBadge.text}}</text>
+                    <text class="pool-card-v2-badge" wx:if="{{item.displayCertBadge}}">{{item.displayCertBadge.text}}</text>
+                  </view>
+                  <text class="match-linked-tag" wx:if="{{item.matchAlreadyLinked}}">已对接</text>
+                  <text class="match-linked-tag preview-tag" wx:elif="{{item.matchPreviewOnly}}">仅预览</text>
+                </view>
+                <view class="pool-card-v2-title">{{item.title}}</view>
+                <view class="pool-card-v2-facts" wx:if="{{item.poolFacts.length}}">
+                  <text class="pool-card-v2-fact" wx:for="{{item.poolFacts}}" wx:for-item="fact" wx:key="label">{{fact.icon}} {{fact.text}}</text>
+                </view>
+                <view class="pool-card-v2-foot">
+                  <text class="pool-card-v2-time">{{item.poolTimeLabel}}</text>
+                  <text class="pool-card-v2-link" catchtap="goRelated" data-id="{{item.id}}">预览 ›</text>
+                </view>
+              </view>
+            </view>
+          </view>
+          <view
+            class="match-load-more"
+            wx:if="{{matchPickerHasMore && matchPickerView === 'smart'}}"
+            bindtap="loadMoreMatchPicker"
+          >{{isProxyResourceConnectPicker ? '查看更多需求' : (isProxyDemandConnectPicker ? '查看更多资源' : '查看更多匹配')}}（还有 {{matchPickerMoreCount}} 条）›</view>
+      </block>
+      <view class="match-picker-action-row" wx:if="{{canShareConnectInvite}}">
+        <button
+          class="button-secondary bottom-btn bottom-share-btn match-picker-share-btn"
+          open-type="share"
+          data-share-scene="connect"
+        >{{shareConnectLabel}}</button>
+      </view>
+      <view
+        class="button-primary owner-match-submit {{matchSubmitDisabled || staffMatchSubmitting ? 'disabled btn-busy' : ''}}"
+        bindtap="submitMatchPicker"
+      >{{staffMatchSubmitting ? '提交中...' : matchSubmitLabel}}</view>
+    </view>
+
+    <view class="owner-action-row" wx:if="{{!showProxyStaffBottomBar}}">
+      <view class="public-display-row owner-public-display" wx:if="{{canTogglePublicDisplay}}">
+        <view class="public-display-text">{{listingPublicDisplay ? '对外公开展示：已在' + (isResource ? '资源' : '需求') + '池脱敏展示，他人可申请对接' : '对外公开展示已关闭：未在' + (isResource ? '资源' : '需求') + '池展示，仅你可见'}}</view>
+        <switch checked="{{listingPublicDisplay}}" bindchange="onPublicDisplayChange" disabled="{{publicDisplayLoading}}" color="#176b5b" />
+      </view>
+      <button class="owner-action-btn owner-share-btn" open-type="share">分享</button>
+      <view class="owner-action-btn button-secondary owner-close-btn admin-takedown-btn {{adminTakeDownLoading ? 'btn-busy' : ''}}" wx:if="{{canAdminTakeDown}}" bindtap="adminTakeDownListing">
+        <view class="owner-close-label">{{adminTakeDownLoading ? '下架中...' : '平台下架'}}</view>
+        <view class="owner-close-hint">管理员强制移出公开展示池</view>
+      </view>
+      <view class="owner-action-btn button-secondary owner-close-btn {{closeListingLoading ? 'btn-busy' : ''}}" wx:if="{{canCloseListing}}" bindtap="closeListing">
+        <view class="owner-close-label">{{closeListingLoading ? '关闭中...' : closeListingLabel}}</view>
+        <view class="owner-close-hint">下架后他人无法查看或对接</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="res-privacy-hint" wx:if="{{!verificationView && !publisherInfo && !canManageListing && !isMatchPreview && !isConnectPreview}}">
+    {{isResource ? '资源发布方' : '需求发布方'}}默认不展示；对接申请通过后将显示脱敏企业名，双方同意交换联系方式后可查看联系人与手机号
+  </view>
+
+  <view class="res-section proxy-staff-actions" wx:if="{{showProxyStaffBottomBar}}">
+    <view class="public-display-row owner-public-display" wx:if="{{canTogglePublicDisplay}}">
+      <view class="public-display-text">{{listingPublicDisplay ? '对外公开展示：已在' + (isResource ? '资源' : '需求') + '池脱敏展示' : '对外公开展示已关闭：未在' + (isResource ? '资源' : '需求') + '池展示，仅客户可见'}}</view>
+      <switch checked="{{listingPublicDisplay}}" bindchange="onPublicDisplayChange" disabled="{{publicDisplayLoading}}" color="#176b5b" />
+    </view>
+    <button class="owner-action-btn owner-share-btn" open-type="share">分享</button>
+    <view class="owner-action-btn button-secondary owner-close-btn {{closeListingLoading ? 'btn-busy' : ''}}" wx:if="{{canCloseListing}}" bindtap="closeListing">
+      <view class="owner-close-label">{{closeListingLoading ? '关闭中...' : closeListingLabel}}</view>
+      <view class="owner-close-hint">下架后他人无法查看或对接</view>
+    </view>
+  </view>
+
+  <view class="fixed-bottom-bar" wx:if="{{showBottomBar}}">
+    <button
+      class="button-secondary bottom-btn bottom-share-btn"
+      wx:if="{{canShareConnectInvite}}"
+      open-type="share"
+      data-share-scene="connect"
+    >{{shareConnectLabel}}</button>
+    <view class="button-primary bottom-btn {{canShareConnectInvite ? '' : 'full-width'}}" bindtap="applyConnect">{{connectText}}</view>
+  </view>
+</view>
+
+<view class="page" wx:else>
+  <view class="empty">没有找到这条商机</view>
+</view>

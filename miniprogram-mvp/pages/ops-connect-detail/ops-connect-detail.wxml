@@ -1,0 +1,68 @@
+<view class="page ops-connect-detail-page" wx:if="{{item}}">
+  <view class="staff-view-banner">运营视图 · 双方信息未脱敏</view>
+
+  <view class="hero-card">
+    <view class="hero-kicker-sm">全局对接</view>
+    <view class="hero-title">{{item.direction}}</view>
+    <view class="hero-status">{{item.displayStatus}}</view>
+    <view
+      class="hero-time copyable-id"
+      wx:if="{{item.id}}"
+      bindlongpress="copyTradeId"
+      data-text="{{item.id}}"
+    >编号：{{item.id}}</view>
+    <view class="hero-time" wx:if="{{item.createdAt}}">申请时间：{{item.createdAt}}</view>
+  </view>
+
+  <view class="card" wx:if="{{item.connectParties.length > 0}}">
+    <view class="section-title compact">对接双方</view>
+    <view class="party-card {{party.canOpenListing ? 'party-card-link' : ''}}" wx:for="{{item.connectParties}}" wx:for-item="party" wx:key="partyRole">
+      <view class="party-head">
+        <view class="party-side">{{party.side}}（{{party.roleLabel}}）</view>
+        <text class="party-pool-tag" wx:if="{{party.poolTypeLabel}}">{{party.poolTypeLabel}}</text>
+      </view>
+      <view
+        class="party-title {{party.canOpenListing ? 'party-title-link' : ''}}"
+        wx:if="{{party.canOpenListing}}"
+        bindtap="goListing"
+        data-id="{{party.listingId}}"
+      >{{party.title}}</view>
+      <view class="party-title" wx:else>{{party.title}}</view>
+      <view class="party-meta" wx:if="{{party.type}}">{{party.type}} · {{party.region}}</view>
+      <view class="party-meta">{{party.company}} · {{party.contact}} · {{party.phone}}</view>
+      <view class="party-summary" wx:if="{{party.summary}}">{{party.summary}}</view>
+      <view
+        class="party-listing-action"
+        wx:if="{{party.canOpenListing}}"
+        bindtap="goListing"
+        data-id="{{party.listingId}}"
+      >预览{{party.poolTypeLabel}} ›</view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{item.description}}">
+    <view class="section-title compact">对接说明</view>
+    <view class="desc connect-reason">{{item.description}}</view>
+  </view>
+
+  <view class="card" wx:if="{{item.isProxyConnect}}">
+    <view class="section-title compact">代发标记</view>
+    <view class="publish-tip">本条对接涉及平台代发商机或运营代撮合。</view>
+  </view>
+
+  <view class="card">
+    <view class="section-title compact">跟进进度</view>
+    <view class="timeline-item" wx:for="{{flowTimeline}}" wx:key="status">
+      <view class="timeline-dot {{item.dotState}}"></view>
+      <view class="timeline-body">
+        <view class="timeline-status">{{item.status}}</view>
+        <view class="timeline-hint" wx:if="{{item.hint}}">{{item.hint}}</view>
+        <view class="timeline-time" wx:if="{{item.time}}">{{item.time}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="fixed-bottom-bar" wx:if="{{item.needsPlatformReview}}">
+    <view class="button-primary full" bindtap="goReview">前往平台审批</view>
+  </view>
+</view>

@@ -1,0 +1,76 @@
+@import "../ops-proxy/ops-proxy.wxss";
+
+.ops-connects-page {
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+}
+
+.connect-card {
+  margin-bottom: 16rpx;
+  padding: 24rpx;
+}
+
+.connect-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 18rpx;
+}
+
+.connect-direction-tag {
+  background: #e8f4f1;
+  color: #176b5b;
+}
+
+.connect-card-time {
+  margin-left: auto;
+  font-size: 22rpx;
+  color: #8a939c;
+}
+
+.connect-party-block + .connect-party-block {
+  margin-top: 16rpx;
+  padding-top: 16rpx;
+  border-top: 2rpx solid #eef1f4;
+}
+
+.connect-party-label {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #68717d;
+}
+
+.connect-party-title {
+  margin-top: 6rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #101820;
+  line-height: 1.4;
+}
+
+.connect-party-contact {
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: #3b454f;
+  word-break: break-all;
+}
+
+.connect-card-foot {
+  margin-top: 18rpx;
+  padding-top: 16rpx;
+  border-top: 2rpx solid #eef1f4;
+  font-size: 24rpx;
+  color: #176b5b;
+  font-weight: 600;
+}
+
+.connect-proxy-tag {
+  display: inline-block;
+  margin-right: 8rpx;
+  padding: 2rpx 10rpx;
+  border-radius: 8rpx;
+  background: #fff4e8;
+  color: #c2410c;
+  font-size: 20rpx;
+  font-weight: 700;
+}

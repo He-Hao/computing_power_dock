@@ -1,0 +1,162 @@
+<view class="page login-page" wx:if="{{pageReady}}">
+  <view class="onboard-hero">
+    <view class="onboard-logo">算</view>
+    <view class="onboard-title">{{heroTitle}}</view>
+    <view class="onboard-sub">{{heroSub}}</view>
+  </view>
+
+  <view class="user-auth-tabs">
+    <view
+      class="user-auth-tab {{userTab === 'login' ? 'active' : ''}}"
+      bindtap="setUserTab"
+      data-tab="login"
+    >登录</view>
+    <view
+      class="user-auth-tab {{userTab === 'register' ? 'active' : ''}} {{allowRegister ? '' : 'disabled'}}"
+      bindtap="setUserTab"
+      data-tab="register"
+    >注册</view>
+  </view>
+  <view class="form-hint register-disabled-hint" wx:if="{{!allowRegister}}">当前微信已绑定手机号，请使用绑定号码登录</view>
+
+  <block wx:if="{{userTab === 'login'}}">
+    <view class="login-body card">
+      <view class="field-block">
+        <view class="field-label">手机号<text class="required">*</text></view>
+        <input
+          class="text-input {{phoneLocked ? 'text-input-disabled' : ''}}"
+          value="{{phone}}"
+          bindinput="onPhoneInput"
+          type="number"
+          maxlength="11"
+          placeholder="请输入手机号"
+          disabled="{{phoneLocked}}"
+        />
+        <view class="form-hint" wx:if="{{phoneLocked}}">已绑定手机号，请输入密码登录</view>
+      </view>
+      <view class="field-block">
+        <view class="field-label">登录密码<text class="required">*</text></view>
+        <input
+          class="text-input"
+          value="{{password}}"
+          bindinput="onPasswordInput"
+          password
+          maxlength="32"
+          placeholder="至少 8 位，含字母与数字"
+        />
+      </view>
+      <view class="legal-doc-agree login-agree-row" bindtap="toggleLoginAgree">
+        <view class="legal-doc-checkbox {{loginAgreed ? 'checked' : ''}}"></view>
+        <view class="legal-doc-agree-text login-agree-text">
+          <text>我已阅读并同意</text>
+          <text class="legal-doc-link" catchtap="openLegal" data-type="service">《用户服务协议》</text>
+          <text>和</text>
+          <text class="legal-doc-link" catchtap="openLegal" data-type="privacy">《隐私政策》</text>
+        </view>
+      </view>
+      <button
+        class="action-btn primary"
+        bindtap="submitUserLogin"
+        loading="{{submitLoading}}"
+        disabled="{{submitLoading || !loginAgreed}}"
+      >
+        登录
+      </button>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view class="login-body card register-panel">
+      <view class="setup-hint" wx:if="{{cloudSetupHint}}">{{cloudSetupHint}}</view>
+      <view class="field-block">
+        <view class="field-label">姓名<text class="required">*</text></view>
+        <input
+          class="text-input"
+          value="{{regContact}}"
+          bindinput="onRegContactInput"
+          maxlength="20"
+          placeholder="请输入真实姓名"
+        />
+      </view>
+      <view class="field-block" wx:if="{{!useWechatPhoneAuth}}">
+        <view class="field-label">手机号<text class="required">*</text></view>
+        <input
+          class="text-input"
+          value="{{regPhone}}"
+          bindinput="onRegPhoneInput"
+          type="number"
+          maxlength="11"
+          placeholder="用于登录和接收通知"
+        />
+      </view>
+      <view class="field-block" wx:if="{{useWechatPhoneAuth}}">
+        <view class="field-label">手机号<text class="required">*</text></view>
+        <view class="form-hint" wx:if="{{!phoneVerified}}">请点击下方按钮完成微信授权</view>
+        <view class="form-hint" wx:else>已授权 {{maskedPhone}}</view>
+      </view>
+      <view class="field-block">
+        <view class="field-label">登录密码<text class="required">*</text></view>
+        <input
+          class="text-input"
+          value="{{regPassword}}"
+          bindinput="onRegPasswordInput"
+          password
+          maxlength="32"
+          placeholder="至少 8 位，含字母与数字"
+        />
+        <view class="password-meter" wx:if="{{regPassword}}">
+          <view class="password-meter-fill" style="width: {{passwordStrength.width}}%"></view>
+        </view>
+        <view class="form-hint" wx:if="{{regPassword}}">{{passwordStrength.text}}</view>
+      </view>
+      <view class="field-block">
+        <view class="field-label">确认密码<text class="required">*</text></view>
+        <input
+          class="text-input"
+          value="{{regConfirmPassword}}"
+          bindinput="onRegConfirmPasswordInput"
+          password
+          maxlength="32"
+          placeholder="再次输入密码"
+        />
+      </view>
+      <view class="legal-doc-panel">
+        <view class="legal-doc-panel-head">
+          <view class="legal-doc-panel-title">协议与申明</view>
+        </view>
+        <view class="legal-doc-nav">
+          <view
+            class="legal-doc-nav-item"
+            wx:for="{{legalDocList}}"
+            wx:key="type"
+            catchtap="openLegal"
+            data-type="{{item.type}}"
+          >
+            <text class="legal-doc-nav-label">{{item.label}}</text>
+            <text class="legal-doc-nav-status {{item.agreed ? 'done' : ''}}">{{item.statusText}}</text>
+            <text class="legal-doc-nav-arrow">›</text>
+          </view>
+        </view>
+        <view class="legal-doc-register-hint" wx:if="{{!allLegalAgreed}}">请逐项进入阅读，滑动至底部并同意</view>
+      </view>
+      <button
+        wx:if="{{useWechatPhoneAuth}}"
+        class="action-btn secondary"
+        open-type="getPhoneNumber"
+        bindgetphonenumber="onGetPhoneNumber"
+        loading="{{phoneLoading}}"
+        disabled="{{!allLegalAgreed || phoneLoading}}"
+      >
+        微信授权手机号
+      </button>
+      <button
+        class="action-btn primary"
+        bindtap="submitRegister"
+        loading="{{submitLoading}}"
+        disabled="{{!allowRegister || !allLegalAgreed || submitLoading || (useWechatPhoneAuth && !phoneVerified)}}"
+      >
+        注册并继续
+      </button>
+    </view>
+  </block>
+</view>

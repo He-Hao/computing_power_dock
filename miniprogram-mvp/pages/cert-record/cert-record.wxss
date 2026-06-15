@@ -1,0 +1,5 @@
+@import "../record/record.wxss";
+
+.cert-record-page.has-fixed-bar {
+  padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
+}

@@ -1,0 +1,15 @@
+<view class="list-pagination-foot {{loading ? 'is-loading' : (hasMore ? 'is-more' : 'is-end')}}" wx:if="{{show}}">
+  <view class="list-pagination-loading" wx:if="{{loading}}">
+    <view class="list-pagination-spinner"></view>
+    <text class="list-pagination-text">加载中</text>
+  </view>
+  <view class="list-pagination-more" wx:elif="{{hasMore}}">
+    <view class="list-pagination-arrow-wrap">
+      <view class="list-pagination-arrow"></view>
+    </view>
+    <text class="list-pagination-text">上拉加载更多</text>
+  </view>
+  <view class="list-pagination-end" wx:else>
+    <text class="list-pagination-text">已全部加载</text>
+  </view>
+</view>

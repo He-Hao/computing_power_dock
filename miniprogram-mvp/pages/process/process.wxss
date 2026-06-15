@@ -1,0 +1,70 @@
+.hero-card {
+  padding: 36rpx 28rpx;
+  border-radius: 8rpx;
+  background: #101820;
+  color: #ffffff;
+}
+
+.hero-title {
+  font-size: 44rpx;
+  font-weight: 900;
+}
+
+.hero-text {
+  margin-top: 14rpx;
+  color: #d8e1e8;
+  font-size: 28rpx;
+  line-height: 1.55;
+}
+
+.timeline {
+  margin-top: 24rpx;
+}
+
+.step {
+  display: flex;
+  gap: 20rpx;
+}
+
+.step-index {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 8rpx;
+  background: #176b5b;
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 900;
+}
+
+.step-body {
+  flex: 1;
+}
+
+.step-title {
+  font-size: 31rpx;
+  font-weight: 900;
+}
+
+.step-text {
+  margin-top: 8rpx;
+  color: #47515c;
+  font-size: 27rpx;
+  line-height: 1.5;
+}
+
+.notice-title {
+  color: #8a4f12;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+
+.notice-text {
+  margin-top: 10rpx;
+  color: #47515c;
+  font-size: 27rpx;
+  line-height: 1.55;
+}

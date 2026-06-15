@@ -1,0 +1,447 @@
+<view class="page page-tab mine-page {{!userLoggedIn ? 'mine-page-guest' : ''}}">
+  <!-- 访客态：登录引导 -->
+  <block wx:if="{{!userLoggedIn}}">
+    <view class="mine-guest-layout">
+      <view class="mine-guest-main">
+        <view class="card guest-auth-card">
+          <view class="guest-auth-avatar" bindtap="onGuestAvatarTap">
+            <view class="guest-avatar-img guest-auth-avatar-img guest-avatar-placeholder">访</view>
+          </view>
+          <view class="guest-auth-title">登录算力码头</view>
+          <view class="guest-auth-desc">发布需求、对接商机、管理提交记录</view>
+          <view class="guest-auth-actions">
+            <view class="button-primary guest-auth-btn" bindtap="goLogin">登录</view>
+            <view class="button-secondary guest-auth-btn" bindtap="goRegister">注册</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="mine-guest-foot section-group">
+        <view class="section-title subtle">帮助</view>
+        <view class="menu-group card">
+          <view class="menu-item" bindtap="goProcess">
+            <text class="menu-icon">流</text>
+            <text class="menu-label">撮合流程说明</text>
+            <text class="menu-arrow">›</text>
+          </view>
+          <view class="menu-item" bindtap="goLegal" data-type="service">
+            <text class="menu-icon">协</text>
+            <text class="menu-label">用户服务协议</text>
+            <text class="menu-arrow">›</text>
+          </view>
+          <view class="menu-item" bindtap="goLegal" data-type="privacy">
+            <text class="menu-icon">私</text>
+            <text class="menu-label">隐私政策</text>
+            <text class="menu-arrow">›</text>
+          </view>
+          <view class="menu-item" bindtap="goLegal" data-type="disclaimer">
+            <text class="menu-icon">免</text>
+            <text class="menu-label">免责申明</text>
+            <text class="menu-arrow">›</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <!-- 已登录 -->
+  <block wx:else>
+    <!-- 一、账号身份 -->
+    <view class="user-header card">
+      <view class="user-header-main">
+        <view class="avatar avatar-user">{{avatarText}}</view>
+        <view class="user-info">
+          <view class="user-name">{{accountName}}</view>
+          <view class="user-meta">{{accountPhone}}</view>
+          <view class="user-level" wx:if="{{staffUser && staffRoleLabel}}">
+            <text class="level-badge staff-role">{{staffRoleLabel}}</text>
+          </view>
+          <view class="user-level" wx:elif="{{levelBadge}}">
+            <text class="level-badge {{levelBadge.badgeClass}}">{{levelBadge.text}}</text>
+          </view>
+        </view>
+      </view>
+      <view class="cap-tags" wx:if="{{!staffUser && permissions.length}}">
+        <view
+          class="cap-tag {{item.unlocked ? 'cap-tag-on' : 'cap-tag-off'}}"
+          wx:for="{{permissions}}"
+          wx:key="key"
+        >{{item.text}}</view>
+      </view>
+    </view>
+
+    <view class="cloud-bar warn card" wx:if="{{cloudSummary && cloudSummary.syncWarning}}">
+      <view class="cloud-bar-title">同步提示</view>
+      <view class="cloud-bar-error">{{cloudSummary.syncWarning}}</view>
+    </view>
+
+    <view class="cloud-bar warn card" wx:if="{{cloudSummary && cloudSummary.error}}">
+      <view class="cloud-bar-title">云端拉取异常</view>
+      <view class="cloud-bar-error">{{cloudSummary.error}}</view>
+      <view class="cloud-bar-action {{syncLoading ? 'btn-busy' : ''}}" bindtap="retryCloudSync">{{syncLoading ? '拉取中...' : '重新拉取'}}</view>
+    </view>
+
+    <!-- 二、待办提醒（普通用户 / 运营共用） -->
+    <view class="page-block" wx:if="{{pendingConnectNotice}}">
+      <view class="next-step card urgent" bindtap="goPendingConnect">
+        <view class="next-step-head">
+          <view class="next-step-title">{{staffUser ? '运营待办' : '对接待处理'}} · {{pendingConnectNotice.count}} {{staffUser ? '项' : '条'}}</view>
+          <view class="next-step-action">去处理 ›</view>
+        </view>
+        <view class="next-step-hint">{{pendingConnectNotice.summary}}</view>
+      </view>
+    </view>
+
+    <view class="page-block" wx:if="{{pendingRejectionNotice}}">
+      <view class="next-step card urgent" bindtap="goPendingRejection">
+        <view class="next-step-head">
+          <view class="next-step-title">审核未通过 · {{pendingRejectionNotice.count}} 条</view>
+          <view class="next-step-action">查看说明 ›</view>
+        </view>
+        <view class="next-step-hint">{{pendingRejectionNotice.summary}}</view>
+      </view>
+    </view>
+
+    <view class="page-block" wx:elif="{{!staffUser && nextStepGuide}}">
+      <view class="next-step card" bindtap="goNextStep">
+        <view class="next-step-head">
+          <view class="next-step-title">{{nextStepTitle}}</view>
+          <view class="next-step-action">{{nextStepGuide.actionText}} ›</view>
+        </view>
+        <view class="next-step-hint">{{nextStepGuide.hint}}</view>
+      </view>
+    </view>
+
+    <!-- 普通用户 -->
+    <block wx:if="{{!staffUser}}">
+      <!-- 三、企业资料 -->
+      <view class="page-block">
+        <view class="section-title subtle">企业资料</view>
+        <view class="section-desc">名片与执照认证，用于发布与对接</view>
+        <view class="menu-group card">
+          <view class="menu-item" bindtap="goEnterprise">
+            <text class="menu-icon">企</text>
+            <view class="menu-body">
+              <view class="menu-label-row">
+                <text class="menu-label">资料与认证</text>
+                <text class="menu-badge cert-{{certBadgeClass}}">{{certSummary.statusText}}</text>
+                <text class="menu-badge menu-badge-alert" wx:if="{{categoryStats.certify.rejectedUnread > 0}}">{{categoryStats.certify.rejectedUnread}} 驳回待查看</text>
+              </view>
+              <text class="menu-desc">{{enterpriseSummary}}</text>
+            </view>
+            <text class="menu-arrow">›</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 五、我参与的（对接） -->
+      <view class="page-block">
+        <view class="section-title subtle">我参与的</view>
+        <view class="section-desc">向他人资源/需求发起的对接与匹配</view>
+        <view class="menu-group card">
+          <view class="menu-item" bindtap="goRecords" data-filter="connect">
+            <text class="menu-icon menu-icon-connect">接</text>
+            <view class="menu-body">
+              <view class="menu-label-row">
+                <text class="menu-label">对接记录</text>
+                <text class="menu-badge menu-badge-alert" wx:if="{{categoryStats.connect.actionPending > 0}}">{{categoryStats.connect.actionPending}} 待处理</text>
+              </view>
+              <text class="menu-desc">{{categoryStats.connect.summary}}</text>
+            </view>
+            <view class="menu-item-right">
+              <text class="menu-extra" wx:if="{{categoryStats.connect.count > 0}}">{{categoryStats.connect.count}} 条</text>
+              <text class="menu-arrow">›</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 六、我发布的（资源 / 需求） -->
+      <view class="page-block">
+        <view class="section-title subtle">我发布的</view>
+        <view class="section-desc">本人提交并审核通过的资源与需求</view>
+        <view class="menu-group card">
+          <view class="menu-item" bindtap="goRecords" data-filter="resource">
+            <text class="menu-icon menu-icon-resource">资</text>
+            <view class="menu-body">
+              <view class="menu-label-row">
+                <text class="menu-label">资源发布</text>
+                <text class="menu-badge" wx:if="{{categoryStats.resource.active > 0}}">{{categoryStats.resource.active}} 发布中</text>
+                <text class="menu-badge menu-badge-alert" wx:if="{{categoryStats.resource.rejectedUnread > 0}}">{{categoryStats.resource.rejectedUnread}} 驳回待查看</text>
+              </view>
+              <text class="menu-desc">{{categoryStats.resource.summary}}</text>
+            </view>
+            <text class="menu-arrow">›</text>
+          </view>
+          <view class="menu-item" bindtap="goRecords" data-filter="demand">
+            <text class="menu-icon menu-icon-demand">需</text>
+            <view class="menu-body">
+              <view class="menu-label-row">
+                <text class="menu-label">需求提交</text>
+                <text class="menu-badge" wx:if="{{categoryStats.demand.active > 0}}">{{categoryStats.demand.active}} 发布中</text>
+                <text class="menu-badge menu-badge-alert" wx:if="{{categoryStats.demand.rejectedUnread > 0}}">{{categoryStats.demand.rejectedUnread}} 驳回待查看</text>
+              </view>
+              <text class="menu-desc">{{categoryStats.demand.summary}}</text>
+            </view>
+            <text class="menu-arrow">›</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 七、我收藏的 -->
+      <view class="page-block">
+        <view class="section-title subtle">我收藏的</view>
+        <view class="section-desc">在资源池 / 需求池点星标，便于后续跟进</view>
+        <view class="menu-group card">
+          <view class="menu-item" bindtap="goFavoriteResources">
+            <text class="menu-icon menu-icon-favorite">★</text>
+            <view class="menu-body">
+              <view class="menu-label-row">
+                <text class="menu-label">收藏的资源</text>
+              </view>
+              <text class="menu-desc">感兴趣的资源，可快速进入对接</text>
+            </view>
+            <view class="menu-item-right">
+              <text class="menu-extra" wx:if="{{favoriteResourceCount > 0}}">{{favoriteResourceCount}} 条</text>
+              <text class="menu-arrow">›</text>
+            </view>
+          </view>
+          <view class="menu-item" bindtap="goFavoriteDemands">
+            <text class="menu-icon menu-icon-favorite">☆</text>
+            <view class="menu-body">
+              <view class="menu-label-row">
+                <text class="menu-label">收藏的需求</text>
+              </view>
+              <text class="menu-desc">感兴趣的需求，可快速发起匹配</text>
+            </view>
+            <view class="menu-item-right">
+              <text class="menu-extra" wx:if="{{favoriteDemandCount > 0}}">{{favoriteDemandCount}} 条</text>
+              <text class="menu-arrow">›</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <!-- 运营账号 -->
+    <block wx:if="{{staffUser}}">
+      <!-- 三、对接待办（需运营确认/交换名片的代发对接） -->
+      <view class="page-block ops-section" id="opsConnectSection" wx:if="{{opsConnectCount > 0}}">
+        <view class="ops-section-head">
+          对接待办<text class="ops-section-count"> · {{opsConnectCount}} 条</text>
+        </view>
+        <view class="section-desc">以下为您代发商机的对接进度，需您同意或确认交换名片，与上方「审核待办」中的代发对接审批不同</view>
+        <view
+          class="card admin-item ops-connect-item"
+          wx:for="{{opsConnectItems}}"
+          wx:key="id"
+          bindtap="openOpsConnectAction"
+          data-id="{{item.id}}"
+        >
+          <view class="admin-item-head">
+            <text class="tag warning">代发对接</text>
+            <text class="status-badge status-pending">{{item.statusLabel}}</text>
+          </view>
+          <view class="admin-item-title">{{item.title}}</view>
+          <view class="admin-item-summary" wx:if="{{item.summary}}">{{item.summary}}</view>
+          <view class="admin-item-time" wx:if="{{item.createdAt}}">{{item.createdAt}}</view>
+          <view class="admin-item-actions">
+            <view class="admin-action-btn ghost" catchtap="openOpsConnectAction" data-id="{{item.id}}">详情</view>
+            <view class="admin-action-btn primary" catchtap="openOpsConnectAction" data-id="{{item.id}}">去处理</view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 四、审核待办 -->
+      <view class="page-block ops-section">
+        <view class="ops-section-head">
+          审核待办<text class="ops-section-count"> · {{opsStats.pendingTotal || 0}} 条</text>
+        </view>
+        <view class="admin-tabs">
+          <view class="admin-tab {{opsReviewTab === 'all' ? 'active' : ''}}" data-tab="all" bindtap="switchOpsReviewTab">
+            <text>全部</text>
+            <text class="admin-tab-count">{{opsStats.pendingTotal || 0}}</text>
+          </view>
+          <view class="admin-tab {{opsReviewTab === 'listing' ? 'active' : ''}}" data-tab="listing" bindtap="switchOpsReviewTab">
+            <text>公示</text>
+            <text class="admin-tab-count">{{opsStats.pendingListings || 0}}</text>
+          </view>
+          <view class="admin-tab {{opsReviewTab === 'certify' ? 'active' : ''}}" data-tab="certify" bindtap="switchOpsReviewTab">
+            <text>认证</text>
+            <text class="admin-tab-count">{{opsStats.pendingCertify || 0}}</text>
+          </view>
+          <view class="admin-tab {{opsReviewTab === 'business' ? 'active' : ''}}" data-tab="business" bindtap="switchOpsReviewTab">
+            <text>商机</text>
+            <text class="admin-tab-count">{{opsStats.pendingBusiness || 0}}</text>
+          </view>
+          <view class="admin-tab {{opsReviewTab === 'proxyConnect' ? 'active' : ''}}" data-tab="proxyConnect" bindtap="switchOpsReviewTab">
+            <text>代发对接</text>
+            <text class="admin-tab-count">{{opsStats.pendingProxyConnect || 0}}</text>
+          </view>
+        </view>
+        <view class="admin-empty card" wx:if="{{opsReviewItems.length === 0}}">
+          <view class="admin-empty-title">{{opsReviewEmptyTitle}}</view>
+          <view class="admin-empty-text" wx:if="{{opsReviewEmptyText}}">{{opsReviewEmptyText}}</view>
+        </view>
+        <view class="card admin-item" wx:for="{{opsReviewItems}}" wx:key="id" bindtap="openOpsReview" data-id="{{item.id}}">
+          <view class="admin-item-head">
+            <text class="tag {{item.tagClass}}">{{item.typeName}}</text>
+            <text class="status-badge status-pending">{{item.statusLabel}}</text>
+          </view>
+          <view class="admin-item-title">{{item.title}}</view>
+          <view class="admin-item-meta" wx:if="{{item.company || item.region || item.proxySide}}">
+            <text wx:if="{{item.proxySide}}">{{item.proxySide}}</text>
+            <text wx:if="{{item.proxyClientPhone}}">{{item.proxySide ? ' · 客户 ' : ''}}{{item.proxyClientPhone}}</text>
+            <text wx:if="{{item.company}}">{{(item.proxySide || item.proxyClientPhone) ? ' · ' : ''}}{{item.company}}</text>
+            <text wx:if="{{item.region}}">{{(item.company || item.proxySide || item.proxyClientPhone) ? ' · ' : ''}}{{item.region}}</text>
+            <text wx:if="{{item.listingType}}"> · {{item.listingType}}</text>
+          </view>
+          <view class="admin-item-proxy-title muted" wx:if="{{item.proxyListingTitle}}">代发商机：{{item.proxyListingTitle}}</view>
+          <view class="admin-item-contact" wx:if="{{item.contactLine}}">{{item.contactLine}}</view>
+          <view class="admin-item-summary" wx:if="{{item.summary}}">{{item.summary}}</view>
+          <view class="admin-item-time">{{item.createdAt}}</view>
+          <view class="admin-item-actions">
+            <view class="admin-action-btn ghost" catchtap="openOpsReview" data-id="{{item.id}}">详情</view>
+            <view class="admin-action-btn reject {{opsReviewBusyId === item.id ? 'btn-busy' : ''}}" catchtap="rejectOpsReview" data-id="{{item.id}}">{{opsReviewBusyId === item.id && opsReviewBusyAction === 'reject' ? '处理中...' : opsReviewRejectLabel}}</view>
+            <view class="admin-action-btn primary {{opsReviewBusyId === item.id ? 'btn-busy' : ''}}" catchtap="approveOpsReview" data-id="{{item.id}}">{{opsReviewBusyId === item.id && opsReviewBusyAction === 'approve' ? '处理中...' : opsReviewApproveLabel}}</view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 五、代发业务 -->
+      <view class="page-block ops-section" wx:if="{{opsProxySection}}">
+        <view class="ops-section-head">{{opsProxySection.title}}</view>
+        <view class="ops-feature-list">
+          <view
+            class="ops-feature card"
+            wx:for="{{opsProxySection.items}}"
+            wx:for-item="item"
+            wx:key="key"
+            bindtap="openOpsFeature"
+            data-action="{{item.action}}"
+          >
+            <view class="ops-feature-icon">{{item.icon}}</view>
+            <view class="ops-feature-body">
+              <view class="ops-feature-title-row">
+                <text class="ops-feature-title">{{item.title}}</text>
+                <text class="ops-feature-badge" wx:if="{{item.badge}}">{{item.badge}}</text>
+              </view>
+            </view>
+            <text class="ops-feature-arrow">›</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 六、平台治理（仅平台管理员） -->
+      <view class="page-block ops-section" wx:if="{{opsGovernanceSection}}">
+        <view class="ops-section-head">{{opsGovernanceSection.title}}</view>
+        <view class="ops-feature-list">
+          <view
+            class="ops-feature card"
+            wx:for="{{opsGovernanceSection.items}}"
+            wx:for-item="item"
+            wx:key="key"
+            bindtap="openOpsFeature"
+            data-action="{{item.action}}"
+          >
+            <view class="ops-feature-icon">{{item.icon}}</view>
+            <view class="ops-feature-body">
+              <view class="ops-feature-title-row">
+                <text class="ops-feature-title">{{item.title}}</text>
+                <text class="ops-feature-badge" wx:if="{{item.badge}}">{{item.badge}}</text>
+              </view>
+              <view class="ops-feature-desc" wx:if="{{item.desc}}">{{item.desc}}</view>
+            </view>
+            <text class="ops-feature-arrow">›</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 七、运营看板 -->
+      <view class="page-block ops-section" wx:if="{{opsMonitorSection}}">
+        <view class="ops-section-head">{{opsMonitorSection.title}}</view>
+        <view class="ops-feature-list">
+          <view
+            class="ops-feature card"
+            wx:for="{{opsMonitorSection.items}}"
+            wx:for-item="item"
+            wx:key="key"
+            bindtap="openOpsFeature"
+            data-action="{{item.action}}"
+          >
+            <view class="ops-feature-icon">{{item.icon}}</view>
+            <view class="ops-feature-body">
+              <view class="ops-feature-title-row">
+                <text class="ops-feature-title">{{item.title}}</text>
+                <text class="ops-feature-badge" wx:if="{{item.badge}}">{{item.badge}}</text>
+              </view>
+            </view>
+            <text class="ops-feature-arrow">›</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 八、测试数据（云端演示账号） -->
+      <view class="page-block ops-section" wx:if="{{opsDemoDataSection}}">
+        <view class="ops-section-head">{{opsDemoDataSection.title}}</view>
+        <view class="ops-section-desc" wx:if="{{opsDemoDataSection.desc}}">{{opsDemoDataSection.desc}}</view>
+        <view class="ops-feature-list">
+          <view
+            class="ops-feature card {{item.danger ? 'ops-feature-danger' : ''}}"
+            wx:for="{{opsDemoDataSection.items}}"
+            wx:for-item="item"
+            wx:key="key"
+            bindtap="openOpsFeature"
+            data-action="{{item.action}}"
+          >
+            <view class="ops-feature-icon">{{item.icon}}</view>
+            <view class="ops-feature-body">
+              <view class="ops-feature-title-row">
+                <text class="ops-feature-title">{{item.title}}</text>
+              </view>
+              <view class="ops-feature-desc" wx:if="{{item.desc}}">{{item.desc}}</view>
+            </view>
+            <text class="ops-feature-arrow">›</text>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <!-- 帮助与账号 -->
+    <view class="page-block section-group">
+      <view class="section-title subtle" wx:if="{{!staffUser}}">帮助与账号</view>
+      <view class="menu-group card">
+        <view class="menu-item" wx:if="{{!staffUser}}" bindtap="goProcess">
+          <text class="menu-icon">流</text>
+          <text class="menu-label">撮合流程说明</text>
+          <text class="menu-arrow">›</text>
+        </view>
+        <view class="menu-item" bindtap="goLegal" data-type="service">
+          <text class="menu-icon">协</text>
+          <text class="menu-label">用户服务协议</text>
+          <text class="menu-arrow">›</text>
+        </view>
+        <view class="menu-item" bindtap="goLegal" data-type="privacy">
+          <text class="menu-icon">私</text>
+          <text class="menu-label">隐私政策</text>
+          <text class="menu-arrow">›</text>
+        </view>
+        <view class="menu-item" bindtap="goLegal" data-type="disclaimer">
+          <text class="menu-icon">免</text>
+          <text class="menu-label">免责申明</text>
+          <text class="menu-arrow">›</text>
+        </view>
+        <view class="menu-item" bindtap="goChangePassword">
+          <text class="menu-icon">密</text>
+          <text class="menu-label">修改密码</text>
+          <text class="menu-arrow">›</text>
+        </view>
+        <view class="menu-item menu-item-danger" bindtap="onLogout">
+          <text class="menu-icon">退</text>
+          <text class="menu-label">退出登录</text>
+          <text class="menu-arrow">›</text>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>

@@ -1,0 +1,130 @@
+<view class="page admin-gov-page">
+  <view class="gov-tabs card">
+    <view class="gov-tab {{activeTab === 'listing' ? 'active' : ''}}" data-tab="listing" bindtap="switchTab">下架商机</view>
+    <view class="gov-tab {{activeTab === 'account' ? 'active' : ''}}" data-tab="account" bindtap="switchTab">账号管理</view>
+  </view>
+
+  <block wx:if="{{activeTab === 'listing'}}">
+    <view class="gov-toolbar card">
+      <view class="search-box">
+        <input
+          class="gov-search-input"
+          value="{{listingKeyword}}"
+          bindinput="onListingKeywordInput"
+          bindconfirm="searchListings"
+          placeholder="编号 URES-/UDEM-、标题、类型、地区"
+        />
+        <text class="gov-search-btn {{listingLoading ? 'btn-busy' : ''}}" bindtap="searchListings">{{listingLoading ? '搜索中...' : '搜索'}}</text>
+      </view>
+      <scroll-view scroll-x class="filter-scroll gov-filter-row" enhanced show-scrollbar="{{false}}">
+        <view class="filter-scroll-inner">
+          <view
+            class="filter-chip {{listingPool === item.value ? 'active' : ''}}"
+            wx:for="{{poolFilters}}"
+            wx:key="value"
+            data-value="{{item.value}}"
+            bindtap="setListingPool"
+          >{{item.label}}</view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <view class="gov-empty card" wx:if="{{!listingKeyword && listingItems.length === 0 && !listingLoading}}">
+      <view class="gov-empty-title">搜索公开展示商机</view>
+      <view class="gov-empty-text">输入编号（URES-/UDEM-）、标题、类型或地区关键词后点「搜索」，可对违规资源/需求强制下架</view>
+    </view>
+
+    <view class="gov-empty card" wx:elif="{{listingItems.length === 0 && !listingLoading}}">
+      <view class="gov-empty-title">暂无匹配商机</view>
+      <view class="gov-empty-text">请调整关键词或筛选条件后重试</view>
+    </view>
+
+    <view class="card gov-item" wx:for="{{listingItems}}" wx:key="id">
+      <view class="gov-item-head">
+        <text class="gov-tag {{item.pool === 'resource' ? 'resource' : 'demand'}}">{{item.pool === 'resource' ? '资源' : '需求'}}</text>
+        <text class="gov-tag muted" wx:if="{{item.publishedByStaff}}">代发</text>
+        <text class="gov-item-id">{{item.id}}</text>
+      </view>
+      <view class="gov-item-title">{{item.title}}</view>
+      <view class="gov-item-meta">{{item.type}} · {{item.region || '地区待填'}} · {{item.publishedAt}}</view>
+      <view class="gov-item-meta muted" wx:if="{{item.ownerPhone}}">发布方手机：{{item.ownerPhone}}</view>
+      <view class="gov-item-actions">
+        <view class="gov-btn ghost" bindtap="previewListing" data-id="{{item.id}}">预览</view>
+        <view class="gov-btn danger {{takingDownId === item.id ? 'btn-busy' : ''}}" bindtap="takeDownListing" data-id="{{item.id}}" data-title="{{item.title}}">{{takingDownId === item.id ? '下架中...' : '强制下架'}}</view>
+      </view>
+    </view>
+  </block>
+
+  <block wx:if="{{activeTab === 'account'}}">
+    <view class="gov-toolbar card">
+      <view class="search-box">
+        <input
+          class="gov-search-input"
+          type="number"
+          maxlength="11"
+          value="{{accountPhone}}"
+          bindinput="onAccountPhoneInput"
+          bindconfirm="lookupAccount"
+          placeholder="输入用户手机号查询"
+        />
+        <text class="gov-search-btn {{accountLoading ? 'btn-busy' : ''}}" bindtap="lookupAccount">{{accountLoading ? '查询中...' : '查询'}}</text>
+      </view>
+    </view>
+
+    <view class="gov-empty card" wx:if="{{!accountSearched && !accountLoading}}">
+      <view class="gov-empty-title">按手机号查询账号</view>
+      <view class="gov-empty-text">输入用户注册时的 11 位手机号并点「查询」，可查看企业、认证与账号状态；可对普通用户禁用或解除禁用，运营账号不可禁用</view>
+    </view>
+
+    <view class="gov-empty card" wx:elif="{{accountLoading}}">
+      <view class="gov-empty-title">查询中…</view>
+      <view class="gov-empty-text">正在获取账号信息</view>
+    </view>
+
+    <view class="card gov-user-card" wx:elif="{{accountUser}}">
+      <view class="gov-user-row">
+        <text class="gov-user-label">手机号</text>
+        <text class="gov-user-value">{{accountUser.phone}}</text>
+      </view>
+      <view class="gov-user-row">
+        <text class="gov-user-label">联系人</text>
+        <text class="gov-user-value">{{accountUser.contact || '—'}}</text>
+      </view>
+      <view class="gov-user-row">
+        <text class="gov-user-label">企业</text>
+        <text class="gov-user-value">{{accountUser.company || '—'}}</text>
+      </view>
+      <view class="gov-user-row">
+        <text class="gov-user-label">认证</text>
+        <text class="gov-user-value">{{accountUser.certLevel || '未认证'}} / {{accountUser.certStatus || '—'}}</text>
+      </view>
+      <view class="gov-user-row">
+        <text class="gov-user-label">账号状态</text>
+        <text class="gov-user-value {{accountUser.accountStatus === 'disabled' ? 'danger-text' : 'ok-text'}}">
+          {{accountUser.accountStatus === 'disabled' ? '已禁用' : '正常'}}
+        </text>
+      </view>
+      <view class="gov-user-reason muted" wx:if="{{accountUser.accountStatus === 'disabled' && accountUser.accountDisabledReason}}">
+        禁用原因：{{accountUser.accountDisabledReason}}
+      </view>
+      <view class="gov-item-actions">
+        <view
+          class="gov-btn danger {{accountActionLoading ? 'btn-busy' : ''}}"
+          wx:if="{{accountUser.accountStatus !== 'disabled' && !accountUser.staffRole}}"
+          bindtap="disableAccount"
+        >{{accountActionLoading === 'disable' ? '处理中...' : '禁用账号'}}</view>
+        <view
+          class="gov-btn primary {{accountActionLoading ? 'btn-busy' : ''}}"
+          wx:if="{{accountUser.accountStatus === 'disabled'}}"
+          bindtap="enableAccount"
+        >{{accountActionLoading === 'enable' ? '处理中...' : '解除禁用'}}</view>
+      </view>
+      <view class="gov-tip muted" wx:if="{{accountUser.staffRole}}">运营账号不可在此禁用</view>
+    </view>
+
+    <view class="gov-empty card" wx:elif="{{accountSearched && !accountLoading}}">
+      <view class="gov-empty-title">未找到账号</view>
+      <view class="gov-empty-text">请确认手机号已注册</view>
+    </view>
+  </block>
+</view>

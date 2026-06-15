@@ -1,0 +1,29 @@
+.login-gate-page {
+  min-height: 100vh;
+  padding-top: 40rpx;
+}
+
+.gate-avatar-icon {
+  width: 128rpx;
+  height: 128rpx;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: #e8ecf0;
+  color: #68717d;
+  font-size: 48rpx;
+  font-weight: 800;
+  line-height: 128rpx;
+  text-align: center;
+}
+
+.register-hint {
+  margin-top: 28rpx;
+  font-size: 26rpx;
+  color: #68717d;
+}
+
+.register-link {
+  margin-left: 8rpx;
+  color: #176b5b;
+  font-weight: 700;
+}

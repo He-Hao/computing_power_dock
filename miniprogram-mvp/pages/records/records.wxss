@@ -1,0 +1,189 @@
+.records-page {
+  padding-bottom: 40rpx;
+}
+
+.records-search-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.records-search-row .search-box {
+  flex: 1;
+}
+
+.records-search-clear {
+  flex: none;
+  font-size: 24rpx;
+  color: #6b7280;
+}
+
+.records-status-block {
+  margin-bottom: 16rpx;
+}
+
+.record-id-line {
+  font-size: 22rpx;
+  line-height: 1.4;
+  margin-bottom: 8rpx;
+  word-break: break-all;
+}
+
+.record-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+}
+
+.record-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.record-tags .tag {
+  margin: 0;
+}
+
+.public-display-on {
+  background: #e9f5f1;
+  color: #176b5b;
+}
+
+.public-display-off {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.record-time {
+  flex: none;
+  font-size: 22rpx;
+}
+
+.record-card-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  line-height: 1.4;
+  margin-bottom: 12rpx;
+}
+
+.record-summary {
+  font-size: 26rpx;
+  line-height: 1.5;
+  margin-bottom: 8rpx;
+}
+
+.record-card .party-card {
+  margin-top: 8rpx;
+}
+
+.record-actions .btn-ghost {
+  flex: 1;
+}
+
+.record-actions .btn-ghost.primary {
+  color: #176b5b;
+  border-color: #b8dfd4;
+  background: #e9f5f1;
+  font-weight: 700;
+}
+
+.linked-connect-box {
+  margin-top: 16rpx;
+  padding: 20rpx;
+  border-radius: 12rpx;
+  background: #f8fafc;
+  border: 2rpx solid #e8ecf0;
+}
+
+.linked-connect-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.linked-connect-title {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #17212b;
+}
+
+.connect-pending-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  margin-bottom: 14rpx;
+  padding: 16rpx 18rpx;
+  border-radius: 12rpx;
+  border: 2rpx solid transparent;
+}
+
+.connect-pending-banner.mine {
+  background: #fff0e8;
+  border-color: #ffd8c7;
+}
+
+.connect-pending-banner.other {
+  background: #eef3f8;
+  border-color: #d5e3f0;
+}
+
+.connect-pending-banner.platform {
+  background: #f5f0ff;
+  border-color: #e4d8f8;
+}
+
+.connect-pending-banner-label {
+  font-size: 26rpx;
+  font-weight: 800;
+}
+
+.connect-pending-banner.mine .connect-pending-banner-label {
+  color: #c2410c;
+}
+
+.connect-pending-banner.other .connect-pending-banner-label {
+  color: #3d5a80;
+}
+
+.connect-pending-banner.platform .connect-pending-banner-label {
+  color: #6b4c9a;
+}
+
+.connect-pending-banner-hint {
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: #47515c;
+}
+
+.connect-pending-banner.mine .connect-pending-banner-hint {
+  color: #9a3412;
+}
+
+.connect-pending-banner.other .connect-pending-banner-hint {
+  color: #3d5a80;
+}
+
+.connect-pending-banner.platform .connect-pending-banner-hint {
+  color: #6b4c9a;
+}
+
+.linked-connect-badge {
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  background: #fdecec;
+  color: #b42318;
+  font-size: 20rpx;
+  font-weight: 700;
+}
+
+.linked-connect-summary {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #68717d;
+}

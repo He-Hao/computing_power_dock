@@ -1,0 +1,32 @@
+<view class="page onboard-page">
+  <view class="welcome-card">
+    <view class="welcome-kicker">注册成功</view>
+    <view class="welcome-title">你想先做什么？</view>
+    <view class="welcome-text">选一个最接近你当前目标的方向，我们会推荐下一步操作。之后随时可在「我的」修改。</view>
+  </view>
+
+  <view class="intent-list">
+    <view
+      class="intent-card {{selectedIntent === item.value ? 'selected' : ''}}"
+      wx:for="{{intents}}"
+      wx:key="value"
+      bindtap="selectIntent"
+      data-value="{{item.value}}"
+    >
+      <view class="intent-title">{{item.title}}</view>
+      <view class="intent-text">{{item.text}}</view>
+      <view class="intent-check" wx:if="{{selectedIntent === item.value}}">✓</view>
+    </view>
+  </view>
+
+  <view class="level-tip card">
+    <view class="level-tip-title">权限说明</view>
+    <view class="level-tip-row">① 访客：可浏览需求池与资源池（不含发布方与附件）</view>
+    <view class="level-tip-row">② 已注册：可收藏、分享、维护资料</view>
+    <view class="level-tip-row">③ 名片认证：可发布需求/资源、申请对接与发起匹配</view>
+    <view class="level-tip-row">④ 执照认证：可查看他人资源附件，并获得优先推荐</view>
+  </view>
+
+  <view class="button-primary onboard-btn {{submitting ? 'disabled' : ''}}" bindtap="confirmIntent">确认并继续</view>
+  <view class="skip-link" bindtap="skipOnboard">稍后再说，先去首页逛逛</view>
+</view>

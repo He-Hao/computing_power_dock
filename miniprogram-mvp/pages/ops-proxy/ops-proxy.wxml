@@ -1,0 +1,105 @@
+<view class="page ops-proxy-page has-fixed-actions">
+  <view class="proxy-hero">
+    <view class="proxy-hero-top">
+      <view>
+        <view class="proxy-title">代发管理</view>
+      </view>
+    </view>
+    <view class="proxy-stats">
+      <view class="proxy-stat">
+        <view class="proxy-stat-value">{{stats.total}}</view>
+        <view class="proxy-stat-label">全部代发</view>
+      </view>
+      <view class="proxy-stat-split"></view>
+      <view class="proxy-stat">
+        <view class="proxy-stat-value">{{stats.resources}}</view>
+        <view class="proxy-stat-label">资源</view>
+      </view>
+      <view class="proxy-stat-split"></view>
+      <view class="proxy-stat">
+        <view class="proxy-stat-value">{{stats.demands}}</view>
+        <view class="proxy-stat-label">需求</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="proxy-toolbar card">
+    <view class="search-box">
+      <text class="search-icon">🔍</text>
+      <input
+        class="proxy-search-input"
+        value="{{keyword}}"
+        bindinput="onSearchInput"
+        bindconfirm="onSearchConfirm"
+        placeholder="搜索标题、客户，或编号 URES-/UDEM-"
+      />
+      <text class="proxy-search-clear" wx:if="{{keyword}}" bindtap="clearSearch">清除</text>
+    </view>
+    <scroll-view scroll-x class="filter-scroll proxy-filter-row" enhanced show-scrollbar="{{false}}">
+      <view class="filter-scroll-inner">
+        <view
+          class="filter-chip {{activePool === item.value ? 'active' : ''}}"
+          wx:for="{{poolFilters}}"
+          wx:key="value"
+          bindtap="setPoolFilter"
+          data-value="{{item.value}}"
+        >{{item.label}}</view>
+      </view>
+    </scroll-view>
+    <scroll-view scroll-x class="filter-scroll proxy-filter-row" enhanced show-scrollbar="{{false}}">
+      <view class="filter-scroll-inner">
+        <view
+          class="filter-chip {{activeStatus === item.value ? 'active' : ''}}"
+          wx:for="{{statusFilters}}"
+          wx:key="value"
+          bindtap="setStatusFilter"
+          data-value="{{item.value}}"
+        >{{item.label}}</view>
+      </view>
+    </scroll-view>
+    <view class="proxy-result-count">共 {{filteredCount}} 条</view>
+  </view>
+
+  <view class="proxy-list-body">
+    <view class="proxy-empty card" wx:if="{{items.length === 0}}">
+      <view class="proxy-empty-title">{{allItems.length === 0 ? '暂无代发记录' : '没有符合条件的代发'}}</view>
+      <view class="proxy-empty-text" wx:if="{{allItems.length > 0}}">调整筛选或清除搜索</view>
+    </view>
+
+    <view
+      class="proxy-card card {{newItemsStartIndex >= 0 && index >= newItemsStartIndex ? 'list-item-enter' : ''}}"
+      wx:for="{{items}}"
+      wx:key="id"
+      bindtap="goProxyDetail"
+      data-id="{{item.id}}"
+      data-submission-only="{{item.proxySubmissionOnly}}"
+      data-submission-id="{{item.submissionId}}"
+    >
+      <view class="proxy-card-head">
+        <view class="proxy-card-meta">
+          <text class="tag proxy-publish-tag">平台代发</text>
+          <text class="tag {{item.poolTagClass}}">{{item.poolTypeLabel}}</text>
+          <text class="proxy-card-type">{{item.type}}</text>
+          <text class="proxy-card-status {{item.proxyStatusClass}}">{{item.proxyStatusLabel}}</text>
+        </view>
+        <text class="proxy-card-time">{{item.poolTimeLabel}}</text>
+      </view>
+      <view class="proxy-card-title">{{item.title}}</view>
+      <view class="proxy-card-facts" wx:if="{{item.poolFacts.length}}">
+        <text class="proxy-card-fact" wx:for="{{item.poolFacts}}" wx:for-item="fact" wx:key="label">{{fact.icon}} {{fact.text}}</text>
+      </view>
+      <view class="proxy-card-client" wx:if="{{item.proxyClientLine}}">客户：{{item.proxyClientLine}}</view>
+      <view class="proxy-card-foot">查看详情 ›</view>
+    </view>
+    <list-pagination-foot
+      total="{{filteredCount}}"
+      loading="{{loadingMore}}"
+      has-more="{{hasMoreDisplay}}"
+    />
+  </view>
+
+  <view class="proxy-fixed-actions">
+    <view class="proxy-action-btn primary" bindtap="goPublishResource">+ 代发资源</view>
+    <view class="proxy-action-btn secondary" bindtap="goPublishDemand">+ 代发需求</view>
+  </view>
+</view>

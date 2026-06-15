@@ -1,0 +1,14 @@
+{
+  "users": {
+    "read": false,
+    "write": false
+  },
+  "listings": {
+    "read": false,
+    "write": false
+  },
+  "submissions": {
+    "read": false,
+    "write": false
+  }
+}

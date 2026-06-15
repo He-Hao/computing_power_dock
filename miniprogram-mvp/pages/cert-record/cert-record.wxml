@@ -1,0 +1,48 @@
+<view class="page cert-record-page has-fixed-bar" wx:if="{{record}}">
+  <view class="hero-card">
+    <view class="hero-kicker-sm">企业认证</view>
+    <view class="hero-title">{{record.title || record.certLevelName}}</view>
+    <view class="hero-status">{{record.displayStatus}}</view>
+    <view class="hero-text">{{record.statusHint}}</view>
+    <view class="hero-time" wx:if="{{record.createdAt}}">提交时间：{{record.createdAt}}</view>
+  </view>
+
+  <view class="card">
+    <view class="section-title compact">认证信息</view>
+    <view class="detail-row" wx:for="{{detailRows}}" wx:key="label">
+      <text class="label">{{item.label}}</text>
+      <text class="value">{{item.value}}</text>
+    </view>
+    <view class="desc detail-desc" wx:if="{{record.description}}">{{record.description}}</view>
+  </view>
+
+  <view class="card" wx:if="{{certImages.length > 0}}">
+    <view class="section-title compact">认证材料</view>
+    <view class="cert-image-block" wx:for="{{certImages}}" wx:key="label">
+      <view class="cert-image-label">{{item.label}}</view>
+      <image wx:if="{{!item.unavailable && (item.displayUrl || item.url)}}" class="cert-image" src="{{item.displayUrl || item.url}}" mode="aspectFill" bindtap="previewCertImage" data-url="{{item.displayUrl || item.url}}" />
+      <view class="cert-image-missing" wx:else>{{item.unavailableHint || '认证图片未上传至云端'}}</view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="section-title compact">审批进度</view>
+    <view class="timeline-item" wx:for="{{flowTimeline}}" wx:key="status">
+      <view class="timeline-dot {{item.dotState}}"></view>
+      <view class="timeline-body">
+        <view class="timeline-status">{{item.status}}</view>
+        <view class="timeline-hint" wx:if="{{item.hint}}">{{item.hint}}</view>
+        <view class="timeline-time" wx:if="{{item.time}}">{{item.time}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="fixed-bottom-bar">
+    <view class="button-secondary" bindtap="goCertRecords">返回审批记录</view>
+    <view class="button-primary" bindtap="goCertify">查看/修改认证资料</view>
+  </view>
+</view>
+
+<view class="page" wx:else>
+  <view class="empty">没有找到这条审批记录</view>
+</view>

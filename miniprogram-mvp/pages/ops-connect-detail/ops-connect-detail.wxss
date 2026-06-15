@@ -1,0 +1,50 @@
+@import "../record/record.wxss";
+
+.ops-connect-detail-page {
+  padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
+}
+
+.staff-view-banner {
+  margin-bottom: 16rpx;
+  padding: 16rpx 20rpx;
+  border-radius: 12rpx;
+  background: #fff4e8;
+  color: #9a3412;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.button-primary.full {
+  flex: 1;
+}
+
+.party-card-link {
+  border: 2rpx solid #e8f4f1;
+}
+
+.party-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.party-pool-tag {
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  background: #e8f4f1;
+  color: #176b5b;
+  font-size: 20rpx;
+  font-weight: 700;
+}
+
+.party-title-link {
+  color: #176b5b;
+}
+
+.party-listing-action {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #176b5b;
+}

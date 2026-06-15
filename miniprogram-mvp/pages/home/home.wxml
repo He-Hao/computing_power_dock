@@ -1,0 +1,108 @@
+<view class="page page-tab home-page">
+  <view class="home-hero card">
+    <view class="home-hero-brand">
+      <view class="home-brand-mark">码</view>
+      <view class="home-brand-copy">
+        <view class="home-brand-name">算力码头</view>
+        <view class="home-brand-tag">{{heroTagline}}</view>
+      </view>
+    </view>
+
+    <view class="home-brand-desc-box">
+      <text class="home-brand-desc">{{heroDesc}}</text>
+      <text class="home-brand-note">{{heroNote}}</text>
+    </view>
+
+    <view class="home-pool-entries">
+      <view class="home-pool-entry" bindtap="goResources">
+        <text class="home-pool-entry-num">{{resourceCount}}</text>
+        <view class="home-pool-entry-copy">
+          <text class="home-pool-entry-title">资源池</text>
+          <text class="home-pool-entry-hint">在架商机 · 查看 ›</text>
+        </view>
+      </view>
+      <view class="home-pool-entry" bindtap="goDemands">
+        <text class="home-pool-entry-num">{{demandCount}}</text>
+        <view class="home-pool-entry-copy">
+          <text class="home-pool-entry-title">需求池</text>
+          <text class="home-pool-entry-hint">在架商机 · 查看 ›</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="home-intent-card card" wx:if="{{intentCategories.length > 0}}">
+    <view class="home-section-head">
+      <text class="home-section-title">快捷入口</text>
+    </view>
+    <view class="home-intent-grid">
+      <view
+        class="home-intent-item"
+        wx:for="{{intentCategories}}"
+        wx:key="name"
+        bindtap="onIntentTap"
+        data-action="{{item.action}}"
+        data-pool="{{item.pool}}"
+        data-filter-type="{{item.filterType}}"
+        data-listing-type="{{item.listingType}}"
+        data-submit-type="{{item.submitType}}"
+      >
+        <text class="home-intent-icon">{{item.icon}}</text>
+        <text class="home-intent-name">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="home-guide-card card">
+    <view class="home-section-head home-section-head-row">
+      <view class="home-section-head-copy">
+        <text class="home-section-title">怎么用</text>
+        <text class="home-section-sub">{{guideSectionSub}}</text>
+      </view>
+      <text class="home-section-link" bindtap="goProcess">完整流程 ›</text>
+    </view>
+    <view class="home-guide-track">
+      <view class="home-guide-cell" wx:for="{{usageSteps}}" wx:key="step">
+        <view class="home-guide-icon home-guide-icon-{{item.tone}}">
+          <block wx:if="{{item.mock === 'browse'}}">
+            <view class="home-mini-tabs"><text class="on">资</text><text>需</text></view>
+          </block>
+          <block wx:elif="{{item.mock === 'connect'}}">
+            <text class="home-mini-label">对接</text>
+          </block>
+          <block wx:else>
+            <text class="home-mini-label">A↔B</text>
+          </block>
+        </view>
+        <view class="home-guide-num">{{item.step}}</view>
+        <view class="home-guide-label">{{item.title}}</view>
+        <view class="home-guide-hint">{{item.text}}</view>
+        <view class="home-guide-arrow" wx:if="{{index < usageSteps.length - 1}}">›</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="home-alerts" wx:if="{{pendingConnectNotice || pendingRejectionNotice}}">
+    <view class="next-step card urgent home-alert" wx:if="{{pendingConnectNotice}}" bindtap="goPendingConnect">
+      <view class="next-step-head">
+        <view class="next-step-title">{{staffUser ? '运营待办' : '对接待处理'}} · {{pendingConnectNotice.count}}</view>
+        <view class="next-step-action">去处理 ›</view>
+      </view>
+    </view>
+
+    <view class="next-step card urgent home-alert" wx:elif="{{pendingRejectionNotice}}" bindtap="goPendingRejection">
+      <view class="next-step-head">
+        <view class="next-step-title">审核未通过 · {{pendingRejectionNotice.count}} 条</view>
+        <view class="next-step-action">查看 ›</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="home-notice-zone card">
+    <view class="home-notice-head">
+      <text class="home-notice-icon">!</text>
+      <text class="home-notice-title">重要提醒</text>
+    </view>
+    <text class="home-notice-text">{{disclaimerNotice}}</text>
+  </view>
+</view>

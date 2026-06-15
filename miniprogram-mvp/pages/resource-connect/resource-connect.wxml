@@ -1,0 +1,100 @@
+<view class="page">
+  <view class="card form-intro">
+    <view class="form-subtitle">申请后由资源方确认信息，双方同意后可交换联系方式。</view>
+  </view>
+
+  <view class="card target-card" wx:if="{{targetPreview || targetTitle}}">
+    <view class="target-head">
+      <view class="target-head-main">
+        <view class="target-label">对接资源方</view>
+      </view>
+      <view class="favorite-btn {{targetFavorited ? 'active' : ''}}" bindtap="toggleTargetFavorite" wx:if="{{targetId}}">
+        <text class="favorite-glyph">{{targetFavorited ? '★' : '☆'}}</text>
+      </view>
+    </view>
+    <view
+      class="pool-card-v2 pool-card-v2-resource pool-card-v2-compact target-preview-card"
+      wx:if="{{targetPreview}}"
+    >
+      <view class="pool-card-v2-head">
+        <view class="pool-card-v2-meta-left">
+          <text class="pool-card-v2-type">{{targetPreview.type}}</text>
+        </view>
+      </view>
+      <view class="pool-card-v2-title">{{targetPreview.title}}</view>
+      <view class="pool-card-v2-facts" wx:if="{{targetPreview.poolFacts.length}}">
+        <text class="pool-card-v2-fact" wx:for="{{targetPreview.poolFacts}}" wx:for-item="fact" wx:key="label">{{fact.icon}} {{fact.text}}</text>
+      </view>
+      <view class="pool-card-v2-summary" wx:if="{{targetPreview.poolSummaryLine}}">{{targetPreview.poolSummaryLine}}</view>
+    </view>
+    <view class="target-title-fallback" wx:elif="{{targetTitle}}">{{targetTitle}}</view>
+    <view class="form-tip">对接方向：你的需求 → 该资源（资源方确认后可交换联系方式）</view>
+  </view>
+
+  <view class="limited-banner login-banner" wx:if="{{needsLogin}}">
+    <view class="limited-banner-title">请先登录</view>
+    <view class="limited-banner-text">登录后可填写对接申请。提交后由资源方确认信息，双方同意后可交换联系方式。</view>
+  </view>
+
+  <view class="card form-card" wx:if="{{!pageBlocked}}">
+    <view class="form-section">申请方信息</view>
+    <view class="field">
+      <view class="field-label">企业名称 <text class="required">*</text></view>
+      <input value="{{form.company}}" data-field="company" bindinput="onInput" placeholder="请输入企业名称" />
+    </view>
+    <view class="field">
+      <view class="field-label">联系人 <text class="required">*</text></view>
+      <input value="{{form.contact}}" data-field="contact" bindinput="onInput" placeholder="请输入联系人" />
+    </view>
+    <view class="field">
+      <view class="field-label">手机号 <text class="required">*</text></view>
+      <input value="{{form.phone}}" data-field="phone" bindinput="onInput" type="number" disabled="{{phoneLocked}}" />
+    </view>
+
+    <view class="form-section">选择你的需求<text class="required" wx:if="{{connectUseDemand}}">*</text></view>
+    <view class="connect-mode-row">
+      <view class="connect-mode {{connectUseDemand ? 'active' : ''}}" bindtap="setConnectMode" data-mode="demand">关联已发布需求</view>
+      <view class="connect-mode {{!connectUseDemand ? 'active' : ''}}" bindtap="setConnectMode" data-mode="text">仅填写说明</view>
+    </view>
+
+    <block wx:if="{{connectUseDemand}}">
+      <view class="demand-option demand-option-create" bindtap="goPublishNewDemand">
+        <view class="demand-option-title">+ 快捷新建需求</view>
+        <view class="demand-option-meta">填写后将返回本页并自动关联到对接申请</view>
+      </view>
+      <view class="empty-connect" wx:if="{{ownDemands.length === 0}}">暂无已发布需求，可上方快捷新建，或切换为「仅填写说明」。</view>
+      <view
+        class="pool-card-v2 pool-card-v2-demand pool-card-v2-compact connect-pick-card {{selectedDemandId === item.id ? 'selected' : ''}}"
+        wx:for="{{ownDemands}}"
+        wx:key="id"
+        bindtap="selectOwnDemand"
+        data-id="{{item.id}}"
+        data-title="{{item.title}}"
+      >
+        <view class="pool-card-v2-head">
+          <view class="pool-card-v2-meta-left">
+            <text class="pool-card-v2-type">{{item.type}}</text>
+          </view>
+        </view>
+        <view class="pool-card-v2-title">{{item.title}}</view>
+        <view class="pool-card-v2-facts" wx:if="{{item.poolFacts.length}}">
+          <text class="pool-card-v2-fact" wx:for="{{item.poolFacts}}" wx:for-item="fact" wx:key="label">{{fact.icon}} {{fact.text}}</text>
+        </view>
+        <view class="pool-card-v2-summary" wx:if="{{item.poolSummaryLine}}">{{item.poolSummaryLine}}</view>
+      </view>
+      <view class="publish-quick-link" wx:if="{{ownDemands.length > 0}}" bindtap="goPublishNewDemand">没有合适的？去发布新需求 ›</view>
+    </block>
+
+    <view class="field" wx:if="{{!connectUseDemand}}">
+      <view class="field-label">对接说明 <text class="required">*</text></view>
+      <textarea value="{{form.description}}" data-field="description" bindinput="onInput" maxlength="300" placeholder="请说明你的需求与这条资源的匹配点、合作意向等。" />
+    </view>
+    <view class="field" wx:else>
+      <view class="field-label">补充说明（选填）</view>
+      <textarea value="{{form.description}}" data-field="description" bindinput="onInput" maxlength="300" placeholder="可补充合作意向、预算、交付节奏等" />
+    </view>
+  </view>
+
+  <view class="button-primary {{submitLocked || pageBlocked ? 'disabled' : ''}}" bindtap="submitForm" wx:if="{{!pageBlocked}}">{{submitDone ? '已提交' : (submitLocked ? '提交中...' : '提交对接申请')}}</view>
+  <view class="privacy-text">提交后由资源方确认对接信息，双方同意后可交换联系方式。</view>
+</view>

@@ -1,0 +1,422 @@
+.hero-card {
+  padding: 36rpx 28rpx;
+  border-radius: 8rpx;
+  background: #101820;
+  color: #ffffff;
+}
+
+.hero-card.hero-card {
+  background: linear-gradient(135deg, #101820 0%, #3b5ccc 100%);
+}
+
+.hero-card.hero-license {
+  background: linear-gradient(135deg, #101820 0%, #176b5b 100%);
+}
+
+.hero-title {
+  font-size: 44rpx;
+  font-weight: 900;
+}
+
+.hero-text {
+  margin-top: 14rpx;
+  color: #d8e1e8;
+  font-size: 28rpx;
+  line-height: 1.55;
+}
+
+.benefit-title {
+  color: #176b5b;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+
+.benefit-text {
+  margin-top: 8rpx;
+  color: #47515c;
+  font-size: 27rpx;
+  line-height: 1.5;
+}
+
+.material {
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid #eef1f4;
+  color: #17212b;
+  font-size: 28rpx;
+}
+
+.material:last-child {
+  border-bottom: none;
+}
+
+.field {
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #eef1f4;
+}
+
+.field:last-child {
+  border-bottom: none;
+}
+
+.field-hint {
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: #9aa3ad;
+}
+
+.field-label {
+  margin-bottom: 12rpx;
+  color: #47515c;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+input,
+.picker-value {
+  width: 100%;
+  min-height: 72rpx;
+  color: #17212b;
+  font-size: 30rpx;
+  line-height: 72rpx;
+}
+
+textarea,
+.cert-textarea {
+  width: 100%;
+  min-height: 240rpx;
+  max-height: 560rpx;
+  padding: 12rpx 0;
+  color: #17212b;
+  font-size: 30rpx;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+
+.upgrade-tip {
+  margin-bottom: 20rpx;
+  color: #176b5b;
+  font-size: 26rpx;
+  line-height: 1.5;
+}
+
+.level-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.level-card {
+  position: relative;
+  padding: 24rpx;
+  border: 2rpx solid #e4e8ed;
+  border-radius: 12rpx;
+  background: #ffffff;
+}
+
+.level-card.active {
+  border-color: #176b5b;
+  background: #f3faf7;
+}
+
+.level-card.level-card.active {
+  border-color: #3b5ccc;
+  background: #f5f8ff;
+}
+
+.level-card.level-license.active {
+  border-color: #176b5b;
+  background: #f3faf7;
+}
+
+.level-badge {
+  display: inline-block;
+  margin-bottom: 10rpx;
+  padding: 6rpx 14rpx;
+  border-radius: 6rpx;
+  font-size: 22rpx;
+  font-weight: 800;
+}
+
+.level-card.level-card .level-badge {
+  background: #eef3ff;
+  color: #3b5ccc;
+}
+
+.level-card.level-license .level-badge {
+  background: #e9f5f1;
+  color: #176b5b;
+}
+
+.level-title {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: #17212b;
+}
+
+.level-text {
+  margin-top: 8rpx;
+  color: #68717d;
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+.level-benefit {
+  margin-top: 6rpx;
+  color: #47515c;
+  font-size: 24rpx;
+}
+
+.level-current {
+  position: absolute;
+  top: 20rpx;
+  right: 20rpx;
+  color: #176b5b;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.upload-section {
+  padding-top: 20rpx;
+}
+
+.upload-tip {
+  margin: 8rpx 0 16rpx;
+  color: #68717d;
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+.upload-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 240rpx;
+  border: 2rpx dashed #c5d0db;
+  border-radius: 12rpx;
+  background: #f8fafc;
+}
+
+.upload-icon {
+  font-size: 56rpx;
+  color: #176b5b;
+  line-height: 1;
+}
+
+.upload-text {
+  margin-top: 12rpx;
+  color: #68717d;
+  font-size: 26rpx;
+}
+
+.upload-preview {
+  border-radius: 12rpx;
+  overflow: hidden;
+}
+
+.upload-image {
+  width: 100%;
+  height: 320rpx;
+  background: #eef1f4;
+}
+
+.upload-actions {
+  display: flex;
+  gap: 16rpx;
+  padding: 16rpx 0 0;
+}
+
+.upload-action {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx 0;
+  border-radius: 8rpx;
+  background: #eef1f4;
+  color: #17212b;
+  font-size: 26rpx;
+}
+
+.upload-action.danger {
+  background: #fdecec;
+  color: #b42318;
+}
+
+.readonly-tip {
+  margin-bottom: 20rpx;
+}
+
+.readonly-status {
+  font-size: 30rpx;
+  font-weight: 800;
+  color: #176b5b;
+}
+
+.readonly-text {
+  margin-top: 10rpx;
+  color: #68717d;
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+.view-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid #eef1f4;
+  font-size: 28rpx;
+}
+
+.view-row.column {
+  flex-direction: column;
+}
+
+.view-label {
+  flex: none;
+  color: #68717d;
+}
+
+.view-value {
+  color: #17212b;
+  line-height: 1.5;
+}
+
+.button-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80rpx;
+  margin-top: 16rpx;
+  border: 2rpx solid #176b5b;
+  border-radius: 8rpx;
+  color: #176b5b;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.locked-row {
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #eef1f4;
+}
+
+.locked-label {
+  margin-bottom: 8rpx;
+  color: #47515c;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.locked-value {
+  color: #17212b;
+  font-size: 30rpx;
+  line-height: 1.45;
+}
+
+.locked-value.multiline {
+  white-space: pre-wrap;
+}
+
+.locked-hint {
+  margin-top: 8rpx;
+  color: #8a4f12;
+  font-size: 22rpx;
+}
+
+.upload-change {
+  margin-top: 12rpx;
+  color: #176b5b;
+  font-size: 26rpx;
+  font-weight: 700;
+  text-align: center;
+}
+
+.cert-records-head {
+  margin-top: 36rpx;
+}
+
+.cert-records-tip {
+  margin-bottom: 16rpx;
+  padding: 28rpx;
+  color: #68717d;
+  font-size: 26rpx;
+  line-height: 1.55;
+}
+
+.cert-record-card {
+  margin-bottom: 16rpx;
+}
+
+.cert-record-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.cert-record-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+}
+
+.cert-record-time {
+  font-size: 22rpx;
+  white-space: nowrap;
+}
+
+.cert-record-title {
+  margin-top: 12rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #17212b;
+}
+
+.cert-record-summary {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+.cert-record-timeline {
+  margin-top: 12rpx;
+  font-size: 22rpx;
+  color: #68717d;
+}
+
+.cert-record-dot {
+  display: inline-block;
+  width: 12rpx;
+  height: 12rpx;
+  margin-right: 6rpx;
+  border-radius: 50%;
+  background: #cbd5e1;
+}
+
+.cert-record-dot.done {
+  background: #16a34a;
+}
+
+.cert-record-dot.pending,
+.cert-record-dot.current {
+  background: #f59e0b;
+}
+
+.cert-record-sep {
+  margin: 0 8rpx;
+  color: #cbd5e1;
+}
+
+.cert-record-action {
+  margin-top: 16rpx;
+  color: #2563eb;
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+.button-primary.disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+

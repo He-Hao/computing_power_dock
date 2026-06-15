@@ -1,0 +1,25 @@
+<view class="page">
+  <view class="hero-card">
+    <view class="hero-title">撮合流程</view>
+    <view class="hero-text">平台先做信息服务和线下商务对接，帮助双方更快确认是否值得深入沟通。</view>
+  </view>
+
+  <view class="section-title">流程步骤</view>
+  <view class="timeline">
+    <view class="step card" wx:for="{{steps}}" wx:key="title">
+      <view class="step-index">{{item.displayIndex}}</view>
+      <view class="step-body">
+        <view class="step-title">{{item.title}}</view>
+        <view class="step-text">{{item.text}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="section-title">平台边界</view>
+  <view class="card notice">
+    <view class="notice-title">平台边界</view>
+    <view class="notice-text">当前阶段不提供线上交易、支付结算或算力调度，重点提供信息发布、意向登记、企业认证和线下商务撮合。</view>
+  </view>
+
+  <view class="button-primary" bindtap="goMatch">申请人工撮合</view>
+</view>

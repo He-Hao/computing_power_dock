@@ -1,0 +1,13 @@
+@import "../records/records.wxss";
+
+.cert-records-page {
+  padding-bottom: 40rpx;
+}
+
+.page-tip {
+  margin-bottom: 16rpx;
+  padding: 28rpx;
+  color: #68717d;
+  font-size: 26rpx;
+  line-height: 1.55;
+}

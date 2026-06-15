@@ -1,0 +1,91 @@
+<view class="page ops-connects-page">
+  <view class="proxy-hero">
+    <view class="proxy-title">全局对接</view>
+    <view class="proxy-stats">
+      <view class="proxy-stat">
+        <view class="proxy-stat-value">{{stats.total}}</view>
+        <view class="proxy-stat-label">全部</view>
+      </view>
+      <view class="proxy-stat-split"></view>
+      <view class="proxy-stat">
+        <view class="proxy-stat-value">{{stats.active}}</view>
+        <view class="proxy-stat-label">进行中</view>
+      </view>
+      <view class="proxy-stat-split"></view>
+      <view class="proxy-stat">
+        <view class="proxy-stat-value">{{stats.pendingPlatform}}</view>
+        <view class="proxy-stat-label">待平台审</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="proxy-toolbar card">
+    <view class="search-box">
+      <text class="search-icon">🔍</text>
+      <input
+        class="proxy-search-input"
+        value="{{keyword}}"
+        bindinput="onSearchInput"
+        bindconfirm="onSearchConfirm"
+        placeholder="搜索企业、商机，或编号 UCON-"
+      />
+      <text class="proxy-search-clear" wx:if="{{keyword}}" bindtap="clearSearch">清除</text>
+    </view>
+    <scroll-view scroll-x class="filter-scroll proxy-filter-row" enhanced show-scrollbar="{{false}}">
+      <view class="filter-scroll-inner">
+        <view
+          class="filter-chip {{activeStatus === item.value ? 'active' : ''}}"
+          wx:for="{{statusFilters}}"
+          wx:key="value"
+          bindtap="setStatusFilter"
+          data-value="{{item.value}}"
+        >{{item.label}}</view>
+      </view>
+    </scroll-view>
+    <view class="proxy-result-count">共 {{filteredCount}} 条</view>
+  </view>
+
+  <view class="proxy-list-body">
+    <view class="proxy-empty card" wx:if="{{items.length === 0}}">
+      <view class="proxy-empty-title">{{allItems.length === 0 ? '暂无对接记录' : '没有符合条件的对接'}}</view>
+      <view class="proxy-empty-text" wx:if="{{allItems.length > 0}}">调整筛选或清除搜索</view>
+    </view>
+
+    <view
+      class="connect-card card {{newItemsStartIndex >= 0 && index >= newItemsStartIndex ? 'list-item-enter' : ''}}"
+      wx:for="{{items}}"
+      wx:key="id"
+      bindtap="goConnectDetail"
+      data-id="{{item.id}}"
+    >
+      <view class="connect-card-head">
+        <text class="tag connect-direction-tag">{{item.directionShort}}</text>
+        <text class="status-badge {{item.statusBadgeClass}}">{{item.displayStatus}}</text>
+        <text class="connect-card-time">{{item.relativeTime}}</text>
+      </view>
+
+      <view class="connect-party-block">
+        <view class="connect-party-label">申请方 · {{item.applicantRoleLabel}}</view>
+        <view class="connect-party-title">{{item.applicantTitle}}</view>
+        <view class="connect-party-contact">{{item.applicantCompany}} · {{item.applicantContact}} · {{item.applicantPhone}}</view>
+      </view>
+
+      <view class="connect-party-block">
+        <view class="connect-party-label">对接方 · {{item.recipientRoleLabel}}</view>
+        <view class="connect-party-title">{{item.recipientTitle}}</view>
+        <view class="connect-party-contact">{{item.recipientCompany}} · {{item.recipientContact}} · {{item.recipientPhone}}</view>
+      </view>
+
+      <view class="connect-card-foot">
+        <text class="connect-proxy-tag" wx:if="{{item.isProxyConnect}}">含代发</text>
+        <text wx:if="{{item.needsPlatformReview}}">待平台审批 · </text>
+        查看详情 ›
+      </view>
+    </view>
+    <list-pagination-foot
+      total="{{filteredCount}}"
+      loading="{{loadingMore}}"
+      has-more="{{hasMoreDisplay}}"
+    />
+  </view>
+</view>

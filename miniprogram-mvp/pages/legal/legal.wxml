@@ -1,0 +1,49 @@
+<view class="legal-doc-page {{requireAgree ? 'legal-doc-page-with-footer' : 'legal-doc-page-view'}}">
+  <view class="legal-doc-panel card legal-doc-panel-page">
+    <view class="legal-doc-panel-head">
+      <view class="legal-doc-panel-title">{{title}}</view>
+      <view class="legal-doc-panel-meta" wx:if="{{updateDate}}">更新日期：{{updateDate}}</view>
+    </view>
+    <scroll-view
+      class="legal-doc-scroll legal-doc-scroll-page"
+      scroll-y
+      enhanced
+      show-scrollbar="{{true}}"
+      lower-threshold="24"
+      bindtap="onContentTap"
+      bindscroll="onContentScroll"
+      bindscrolltolower="onScrollToLower"
+    >
+      <view class="legal-doc-scroll-inner">
+        <block wx:for="{{sections}}" wx:key="title" wx:for-item="section">
+          <view class="legal-doc-section-title" wx:if="{{section.title}}">{{section.title}}</view>
+          <view
+            class="legal-doc-item"
+            wx:for="{{section.paragraphs}}"
+            wx:for-item="para"
+            wx:for-index="paraIdx"
+            wx:key="*this"
+          >{{numbered ? (paraIdx + 1) + '. ' : ''}}{{para}}</view>
+        </block>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="legal-doc-page-footer" wx:if="{{requireAgree}}">
+    <view class="legal-doc-read-hint" wx:if="{{readStatusHint}}">{{readStatusHint}}</view>
+    <view
+      class="legal-doc-agree {{readReady || agreed ? '' : 'legal-doc-agree-disabled'}}"
+      bindtap="toggleAgree"
+    >
+      <view
+        class="legal-doc-checkbox {{agreed ? 'checked' : ''}} {{readReady || agreed ? '' : 'legal-doc-checkbox-disabled'}}"
+      ></view>
+      <view class="legal-doc-agree-text">{{agreeLabel}}</view>
+    </view>
+    <button wx:if="{{agreed}}" class="legal-doc-back-btn" bindtap="goBack">返回上一步</button>
+  </view>
+
+  <view class="legal-doc-page-footer legal-doc-page-footer-view" wx:else>
+    <button class="legal-doc-back-btn legal-doc-back-btn-view" bindtap="goBack">返回</button>
+  </view>
+</view>

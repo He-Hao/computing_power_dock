@@ -1,0 +1,134 @@
+<view class="page records-page">
+  <view class="records-search-row">
+    <view class="search-box">
+      <text class="search-icon">🔍</text>
+      <input
+        value="{{keyword}}"
+        bindinput="onSearch"
+        bindconfirm="onSearchConfirm"
+        placeholder="搜索编号 UCON-/SRES-/SDEM- 或标题"
+      />
+    </view>
+    <text class="records-search-clear" wx:if="{{keyword}}" bindtap="clearSearch">清除</text>
+  </view>
+
+  <view class="filter-row">
+    <view
+      class="filter-chip {{activeFilter === item.key ? 'active' : ''}}"
+      wx:for="{{filters}}"
+      wx:key="key"
+      data-filter="{{item.key}}"
+      bindtap="switchFilter"
+    >{{item.label}}</view>
+  </view>
+
+  <view class="records-status-block" wx:if="{{recordStatusFilters.length > 0}}">
+    <scroll-view scroll-x class="filter-scroll" enhanced show-scrollbar="{{false}}">
+      <view class="filter-scroll-inner">
+        <view
+          class="filter-chip {{recordStatusFilter === item.value ? 'active' : ''}}"
+          wx:for="{{recordStatusFilters}}"
+          wx:key="value"
+          bindtap="switchRecordStatusFilter"
+          data-value="{{item.value}}"
+        >{{item.label}}</view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="empty" wx:if="{{submissions.length === 0}}">
+    {{emptyText}}
+  </view>
+
+  <block wx:for="{{submissions}}" wx:key="id">
+    <view class="card record-card {{newItemsStartIndex >= 0 && index >= newItemsStartIndex ? 'list-item-enter' : ''}}">
+      <view class="record-card-head">
+        <view class="record-tags">
+          <text class="tag {{item.typeTagClass}}">{{item.typeTagLabel}}</text>
+          <text
+            class="status-badge {{item.connectStatusBadgeClass}}"
+            wx:if="{{item.type === 'connect' && !item.connectPendingLabel && item.connectStatusLabel}}"
+          >{{item.connectStatusLabel}}</text>
+          <text class="status-badge {{item.statusBadgeClass}}" wx:elif="{{item.type !== 'connect'}}">{{item.displayStatus}}</text>
+          <text
+            class="status-badge {{item.publicDisplayBadgeClass}}"
+            wx:if="{{item.showPublicDisplayStatus}}"
+          >{{item.publicDisplayLabel}}</text>
+        </view>
+        <text class="muted record-time">{{item.relativeTime}}</text>
+      </view>
+
+      <view
+        class="connect-pending-banner {{item.connectPendingBadgeClass}}"
+        wx:if="{{item.type === 'connect' && item.connectPendingLabel}}"
+      >
+        <text class="connect-pending-banner-label">{{item.connectPendingLabel}}</text>
+        <text class="connect-pending-banner-hint">{{item.connectPendingHint}}</text>
+      </view>
+
+      <view class="record-card-title">{{item.cardTitle}}</view>
+      <view
+        class="muted record-id-line copyable-id"
+        wx:if="{{item.id}}"
+        catchlongpress="copyTradeId"
+        data-text="{{item.id}}"
+      >编号：{{item.id}}</view>
+      <view class="muted record-summary" wx:if="{{item.summaryLine}}">{{item.summaryLine}}</view>
+
+      <view class="party-card" wx:if="{{item.connectResourceParty}}">
+        <view class="party-side">{{item.connectResourceParty.side}}</view>
+        <view class="party-title">{{item.connectResourceParty.title}}</view>
+      </view>
+
+      <view class="connect-reason-box" wx:if="{{item.type === 'connect' && item.description}}">
+        <view class="connect-reason-title">对接理由</view>
+        <view class="muted">{{item.description}}</view>
+      </view>
+
+      <view class="record-timeline" wx:if="{{item.miniTimeline.length > 0}}">
+        <block wx:for="{{item.miniTimeline}}" wx:for-item="step" wx:key="index">
+          <block wx:if="{{step.compact}}">
+            <text class="record-dot done"></text>
+            <text>{{step.text}}</text>
+          </block>
+          <block wx:else>
+            <text class="record-dot {{step.dotState}}"></text>
+            <text>{{step.label}}</text>
+            <text class="record-timeline-sep" wx:if="{{index < item.miniTimeline.length - 1}}">—</text>
+          </block>
+        </block>
+      </view>
+
+      <view class="linked-connect-box" wx:if="{{item.linkedConnectCount > 0}}">
+        <view class="linked-connect-head">
+          <text class="linked-connect-title">关联对接</text>
+          <text class="linked-connect-badge" wx:if="{{item.linkedConnectPending > 0}}">{{item.linkedConnectPending}} 待处理</text>
+        </view>
+        <view class="linked-connect-summary">{{item.linkedConnectSummary}}</view>
+      </view>
+
+      <view class="record-actions">
+        <view
+          class="btn-ghost primary"
+          wx:if="{{item.canViewListing}}"
+          catchtap="goListingDetail"
+          data-listing-id="{{item.listingId}}"
+        >{{item.viewListingButtonText}}</view>
+        <view class="btn-ghost" catchtap="goRecord" data-id="{{item.id}}">{{item.detailButtonText}}</view>
+        <view
+          class="btn-ghost danger {{closingListingId === item.listingId ? 'btn-busy' : ''}}"
+          wx:if="{{item.canClose}}"
+          catchtap="closeListing"
+          data-id="{{item.id}}"
+          data-listing-id="{{item.listingId}}"
+          data-type="{{item.type}}"
+        >{{closingListingId === item.listingId ? '关闭中...' : item.closeButtonText}}</view>
+      </view>
+    </view>
+  </block>
+  <list-pagination-foot
+    total="{{filteredCount}}"
+    loading="{{loadingMore}}"
+    has-more="{{hasMoreDisplay}}"
+  />
+</view>

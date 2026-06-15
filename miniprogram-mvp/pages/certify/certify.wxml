@@ -1,0 +1,227 @@
+<view class="page">
+  <view class="hero-card hero-{{activeLevel}}">
+    <view class="hero-title">{{readOnly ? '认证信息' : '企业认证'}}</view>
+    <view class="hero-text">{{readOnly ? '认证资料仅供查看，审核通过或审核中不可修改。' : (isUpgradeMode ? '升级营业执照认证，名片已填信息锁定，可补充说明并完善空白项。' : levelConfig.subtitle)}}</view>
+  </view>
+
+  <view class="readonly-tip card" wx:if="{{readOnly}}">
+    <view class="readonly-status">{{statusText || '认证审核中'}}</view>
+    <view class="readonly-text">以下为你已提交的认证信息，审核期间不可修改或重复提交。如需升级认证等级，请点击下方按钮。</view>
+  </view>
+
+  <view class="upgrade-tip card" wx:if="{{isUpgradeMode}}">
+    名片认证信息已锁定不可修改；认证说明可补充，此前未填写的项（如信用代码、邮箱）可继续完善。
+  </view>
+
+  <view class="section-title" wx:if="{{!readOnly && !isUpgradeMode}}">选择认证等级</view>
+  <view class="level-grid" wx:if="{{!readOnly && !isUpgradeMode}}">
+    <view
+      class="level-card level-{{item.value}} {{activeLevel === item.value ? 'active' : ''}}"
+      wx:for="{{certLevels}}"
+      wx:key="value"
+      bindtap="selectLevel"
+      data-level="{{item.value}}"
+    >
+      <view class="level-badge">{{item.badge}}</view>
+      <view class="level-title">{{item.title}}</view>
+      <view class="level-text">{{item.subtitle}}</view>
+      <view class="level-current" wx:if="{{currentCertLevel === item.value}}">当前等级</view>
+    </view>
+  </view>
+
+  <view class="section-title">{{readOnly ? '认证资料' : (isUpgradeMode ? '升级认证申请' : '认证申请')}}</view>
+  <view class="card">
+    <block wx:if="{{readOnly}}">
+      <view class="view-row"><text class="view-label">认证等级</text><text>{{levelConfig.title}}</text></view>
+      <view class="view-row"><text class="view-label">企业名称</text><text>{{form.company}}</text></view>
+      <view class="view-row" wx:if="{{form.creditCode}}"><text class="view-label">信用代码</text><text>{{form.creditCode}}</text></view>
+      <view class="view-row" wx:if="{{form.region && levelConfig.requiresRegionRole}}"><text class="view-label">企业所在地</text><text>{{form.region}}</text></view>
+      <view class="view-row" wx:if="{{form.role && levelConfig.requiresRegionRole}}"><text class="view-label">企业角色</text><text>{{form.role}}</text></view>
+      <view class="view-row"><text class="view-label">联系人</text><text>{{form.contact}}</text></view>
+      <view class="view-row"><text class="view-label">手机号</text><text>{{form.phone}}</text></view>
+      <view class="view-row" wx:if="{{form.email}}"><text class="view-label">邮箱</text><text>{{form.email}}</text></view>
+      <view class="view-row" wx:if="{{form.website}}"><text class="view-label">官网</text><text>{{form.website}}</text></view>
+      <view class="view-row column"><text class="view-label">认证说明</text><text class="view-value">{{form.description}}</text></view>
+      <view class="upload-section" wx:if="{{certImages.length > 0}}">
+        <view class="field-label">认证材料</view>
+        <view class="cert-image-block" wx:for="{{certImages}}" wx:key="label">
+          <view class="cert-image-label">{{item.label}}</view>
+          <image class="upload-image" src="{{item.url}}" mode="aspectFill" bindtap="previewCertImage" data-url="{{item.url}}" />
+        </view>
+      </view>
+    </block>
+
+    <block wx:else>
+      <view class="field" wx:if="{{!isUpgradeMode || !fieldLocks.company}}">
+        <view class="field-label">企业名称 <text class="required">*</text></view>
+        <input value="{{form.company}}" data-field="company" bindinput="onInput" placeholder="请输入企业名称" />
+      </view>
+      <view class="locked-row" wx:elif="{{isUpgradeMode && fieldLocks.company}}">
+        <view class="locked-label">企业名称</view>
+        <view class="locked-value">{{form.company}}</view>
+        <view class="locked-hint">名片认证已填写，不可修改</view>
+      </view>
+
+      <view class="field" wx:if="{{levelConfig.requiresCreditCode}}">
+        <view class="field-label">统一社会信用代码 <text class="required">*</text></view>
+        <input value="{{form.creditCode}}" data-field="creditCode" bindinput="onInput" placeholder="请输入 18 位信用代码" />
+      </view>
+
+      <view class="field" wx:if="{{levelConfig.requiresRegionRole && (!isUpgradeMode || !fieldLocks.region)}}">
+        <view class="field-label">企业所在地 <text class="required">*</text></view>
+        <picker mode="selector" range="{{regionOptions}}" bindchange="onRegionChange">
+          <view class="picker-value">{{form.region || "请选择"}}</view>
+        </picker>
+      </view>
+      <view class="locked-row" wx:elif="{{levelConfig.requiresRegionRole && isUpgradeMode && fieldLocks.region}}">
+        <view class="locked-label">企业所在地</view>
+        <view class="locked-value">{{form.region}}</view>
+        <view class="locked-hint">名片认证已填写，不可修改</view>
+      </view>
+
+      <view class="field" wx:if="{{levelConfig.requiresRegionRole && (!isUpgradeMode || !fieldLocks.role)}}">
+        <view class="field-label">企业角色 <text class="required">*</text></view>
+        <picker mode="selector" range="{{roleOptions}}" bindchange="onRoleChange">
+          <view class="picker-value">{{form.role || "请选择"}}</view>
+        </picker>
+      </view>
+      <view class="locked-row" wx:elif="{{levelConfig.requiresRegionRole && isUpgradeMode && fieldLocks.role}}">
+        <view class="locked-label">企业角色</view>
+        <view class="locked-value">{{form.role}}</view>
+        <view class="locked-hint">名片认证已填写，不可修改</view>
+      </view>
+
+      <view class="field" wx:if="{{!isUpgradeMode || !fieldLocks.contact}}">
+        <view class="field-label">联系人 <text class="required">*</text></view>
+        <input value="{{form.contact}}" data-field="contact" bindinput="onInput" placeholder="请输入联系人" />
+      </view>
+      <view class="locked-row" wx:elif="{{isUpgradeMode && fieldLocks.contact}}">
+        <view class="locked-label">联系人</view>
+        <view class="locked-value">{{form.contact}}</view>
+        <view class="locked-hint">名片认证已填写，不可修改</view>
+      </view>
+
+      <view class="field" wx:if="{{!isUpgradeMode || !fieldLocks.phone}}">
+        <view class="field-label">手机号 <text class="required">*</text></view>
+        <input value="{{form.phone}}" data-field="phone" bindinput="onInput" type="number" placeholder="用于认证回访" />
+      </view>
+      <view class="locked-row" wx:elif="{{isUpgradeMode && fieldLocks.phone}}">
+        <view class="locked-label">手机号</view>
+        <view class="locked-value">{{form.phone}}</view>
+        <view class="locked-hint">名片认证已填写，不可修改</view>
+      </view>
+
+      <view class="field" wx:if="{{activeLevel === 'license' && (!isUpgradeMode || !fieldLocks.email)}}">
+        <view class="field-label">邮箱</view>
+        <input value="{{form.email}}" data-field="email" bindinput="onInput" placeholder="{{isUpgradeMode ? '此前未填写可补充' : '选填'}}" />
+      </view>
+      <view class="locked-row" wx:elif="{{activeLevel === 'license' && isUpgradeMode && fieldLocks.email}}">
+        <view class="locked-label">邮箱</view>
+        <view class="locked-value">{{form.email}}</view>
+        <view class="locked-hint">名片认证已填写，不可修改</view>
+      </view>
+
+      <view class="field" wx:if="{{activeLevel === 'license' && (!isUpgradeMode || !fieldLocks.website)}}">
+        <view class="field-label">官网</view>
+        <input value="{{form.website}}" data-field="website" bindinput="onInput" placeholder="{{isUpgradeMode ? '此前未填写可补充' : '选填'}}" />
+      </view>
+      <view class="locked-row" wx:elif="{{activeLevel === 'license' && isUpgradeMode && fieldLocks.website}}">
+        <view class="locked-label">官网</view>
+        <view class="locked-value">{{form.website}}</view>
+        <view class="locked-hint">名片认证已填写，不可修改</view>
+      </view>
+
+      <block wx:if="{{isUpgradeMode && baseDescription}}">
+        <view class="locked-row">
+          <view class="locked-label">已有认证说明</view>
+          <view class="locked-value multiline">{{baseDescription}}</view>
+          <view class="locked-hint">名片认证内容，不可修改</view>
+        </view>
+        <view class="field">
+          <view class="field-label">补充认证说明</view>
+          <textarea
+            class="cert-textarea"
+            auto-height
+            maxlength="1000"
+            value="{{descriptionSupplement}}"
+            bindinput="onDescriptionSupplement"
+            placeholder="可补充企业资质、服务能力、合作案例等"
+          />
+        </view>
+      </block>
+      <view class="field" wx:else>
+        <view class="field-label">认证说明 <text class="required">*</text></view>
+        <textarea
+          class="cert-textarea"
+          auto-height
+          maxlength="1000"
+          value="{{form.description}}"
+          data-field="description"
+          bindinput="onInput"
+          placeholder="请简要说明资源、服务能力或需求方向"
+        />
+      </view>
+
+      <view class="upload-section" wx:if="{{isUpgradeMode && fieldLocks.cardImage}}">
+        <view class="field-label">个人名片</view>
+        <view class="locked-hint">名片认证已上传，不可修改</view>
+        <image class="upload-image" src="{{form.cardImage}}" mode="aspectFill" bindtap="previewCertImage" data-url="{{form.cardImage}}" />
+      </view>
+
+      <view class="upload-section">
+        <view class="field-label">{{levelConfig.uploadLabel}} <text class="required">*</text></view>
+        <view class="upload-tip">{{levelConfig.uploadTip}}</view>
+        <block wx:if="{{activeLevel === 'card'}}">
+          <view class="upload-box" wx:if="{{!form.cardImage}}" bindtap="chooseCertImage">
+            <view class="upload-icon">+</view>
+            <view class="upload-text">点击上传图片</view>
+          </view>
+          <view class="upload-preview" wx:else>
+            <image class="upload-image" src="{{form.cardImage}}" mode="aspectFill" bindtap="previewCertImage" data-url="{{form.cardImage}}" />
+            <view class="upload-change" bindtap="chooseCertImage">重新上传</view>
+          </view>
+        </block>
+        <block wx:else>
+          <view class="upload-box" wx:if="{{!form.licenseImage}}" bindtap="chooseCertImage">
+            <view class="upload-icon">+</view>
+            <view class="upload-text">点击上传图片</view>
+          </view>
+          <view class="upload-preview" wx:else>
+            <image class="upload-image" src="{{form.licenseImage}}" mode="aspectFill" bindtap="previewCertImage" data-url="{{form.licenseImage}}" />
+            <view class="upload-change" bindtap="chooseCertImage">重新上传</view>
+          </view>
+        </block>
+      </view>
+    </block>
+  </view>
+
+  <view class="button-primary disabled" wx:if="{{submitPending}}">待审批</view>
+  <view class="button-primary {{submitLocked ? 'disabled' : ''}}" wx:elif="{{!readOnly}}" bindtap="submitCertify">{{submitLocked ? '提交中...' : ('提交' + levelConfig.title)}}</view>
+  <view class="button-secondary" wx:if="{{canUpgrade && readOnly && !submitPending}}" bindtap="goUpgrade">升级为营业执照认证</view>
+
+  <view class="section-title cert-records-head">审批记录</view>
+  <view class="card cert-records-tip" wx:if="{{certRecords.length === 0}}">
+    暂无认证审批记录。提交企业认证后，审核进度会显示在这里。
+  </view>
+  <block wx:for="{{certRecords}}" wx:key="id">
+    <view class="card cert-record-card">
+      <view class="cert-record-head">
+        <view class="cert-record-tags">
+          <text class="tag">{{item.certLevelName}}</text>
+          <text class="status-badge {{item.statusBadgeClass}}">{{item.displayStatus}}</text>
+        </view>
+        <text class="muted cert-record-time">{{item.relativeTime}}</text>
+      </view>
+      <view class="cert-record-title">{{item.cardTitle}}</view>
+      <view class="muted cert-record-summary" wx:if="{{item.summaryLine}}">{{item.summaryLine}}</view>
+      <view class="cert-record-timeline" wx:if="{{item.miniTimeline.length > 0}}">
+        <block wx:for="{{item.miniTimeline}}" wx:for-item="step" wx:key="label">
+          <text class="cert-record-dot {{step.dotState}}"></text>
+          <text>{{step.label}}</text>
+          <text class="cert-record-sep" wx:if="{{index < item.miniTimeline.length - 1}}">—</text>
+        </block>
+      </view>
+      <view class="cert-record-action" catchtap="goCertRecord" data-id="{{item.id}}">查看审批详情 ›</view>
+    </view>
+  </block>
+</view>

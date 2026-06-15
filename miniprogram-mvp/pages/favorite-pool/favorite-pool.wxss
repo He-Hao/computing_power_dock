@@ -1,0 +1,5 @@
+/* 样式见 app.wxss */
+
+.favorite-pool-page {
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+}

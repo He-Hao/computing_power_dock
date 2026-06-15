@@ -1,0 +1,254 @@
+.ops-page {
+  padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
+}
+
+.ops-hero {
+  margin-bottom: 24rpx;
+  padding: 32rpx 28rpx;
+  border-radius: 20rpx;
+  background: linear-gradient(145deg, #101820 0%, #1a3a35 100%);
+  color: #ffffff;
+  box-shadow: 0 12rpx 32rpx rgba(16, 24, 32, 0.18);
+}
+
+.ops-hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.ops-kicker {
+  color: #7bd7c0;
+  font-size: 22rpx;
+  font-weight: 700;
+  letter-spacing: 1rpx;
+}
+
+.ops-title {
+  margin-top: 8rpx;
+  font-size: 36rpx;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.ops-meta,
+.ops-mode {
+  margin-top: 8rpx;
+  color: rgba(216, 225, 232, 0.85);
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+.ops-exit {
+  flex: none;
+  padding: 12rpx 20rpx;
+  border-radius: 32rpx;
+  background: rgba(255, 255, 255, 0.12);
+  color: #d8e1e8;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.ops-stats {
+  display: flex;
+  align-items: center;
+  margin-top: 28rpx;
+  padding-top: 20rpx;
+  border-top: 2rpx solid rgba(255, 255, 255, 0.1);
+}
+
+.ops-stat {
+  flex: 1;
+  text-align: center;
+}
+
+.ops-stat-split {
+  width: 2rpx;
+  height: 56rpx;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.ops-stat-value {
+  color: #7bd7c0;
+  font-size: 40rpx;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.ops-stat-label {
+  margin-top: 8rpx;
+  color: rgba(216, 225, 232, 0.8);
+  font-size: 22rpx;
+}
+
+.ops-locked {
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+}
+
+.ops-locked-title {
+  font-size: 30rpx;
+  font-weight: 800;
+  color: #17212b;
+}
+
+.ops-locked-text {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #68717d;
+}
+
+.ops-locked-action {
+  margin-top: 20rpx;
+  color: #176b5b;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.ops-section {
+  margin-bottom: 24rpx;
+}
+
+.ops-section-head {
+  margin-bottom: 12rpx;
+  padding: 0 4rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #68717d;
+}
+
+.ops-section-desc {
+  margin: -4rpx 0 16rpx;
+  padding: 0 4rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: #8a939e;
+}
+
+.ops-feature {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 22rpx 28rpx;
+  margin-bottom: 12rpx;
+  border-radius: 16rpx;
+}
+
+.ops-feature-icon {
+  flex: none;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 16rpx;
+  background: #e9f5f1;
+  color: #176b5b;
+  font-size: 28rpx;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ops-feature-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ops-feature-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.ops-feature-title {
+  font-size: 30rpx;
+  font-weight: 800;
+  color: #17212b;
+}
+
+.ops-feature-badge {
+  padding: 4rpx 12rpx;
+  border-radius: 20rpx;
+  background: #fff3e8;
+  color: #8a4f12;
+  font-size: 20rpx;
+  font-weight: 700;
+}
+
+.ops-feature-desc {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: #68717d;
+}
+
+.ops-feature-arrow {
+  flex: none;
+  font-size: 36rpx;
+  color: #c2c8cf;
+}
+
+.ops-feature-danger .ops-feature-icon {
+  background: #fff1df;
+  color: #c2410c;
+}
+
+.ops-feature-danger .ops-feature-title {
+  color: #9a3412;
+}
+
+.ops-recent {
+  padding: 24rpx 28rpx;
+  margin-bottom: 12rpx;
+  border-radius: 16rpx;
+}
+
+.ops-recent-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.ops-recent-time {
+  font-size: 22rpx;
+  color: #9aa3ad;
+}
+
+.ops-recent-title {
+  margin-top: 12rpx;
+  font-size: 30rpx;
+  font-weight: 800;
+  color: #17212b;
+  line-height: 1.35;
+}
+
+.ops-recent-meta,
+.ops-recent-contact {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #68717d;
+}
+
+.ops-tips {
+  padding: 24rpx 28rpx;
+}
+
+.ops-tips-title {
+  font-size: 28rpx;
+  font-weight: 800;
+  color: #17212b;
+}
+
+.ops-tips-item {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #68717d;
+}
+
+.tag.cert {
+  background: #eef3ff;
+  color: #3b5ccc;
+}
