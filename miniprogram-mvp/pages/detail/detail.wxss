@@ -4,8 +4,9 @@
 
 /* 详情顶栏：与资源池/需求池卡片统一，略紧凑 */
 .pool-card-v2-detail {
+  position: relative;
   margin-bottom: 0;
-  padding: 18rpx 20rpx 14rpx 24rpx;
+  padding: 18rpx 72rpx 14rpx 24rpx;
 }
 
 .pool-card-v2-detail-structured {
@@ -18,6 +19,71 @@
 
 .pool-card-v2-detail .pool-card-v2-head {
   margin-bottom: 8rpx;
+}
+
+.detail-card-favorite {
+  position: absolute;
+  top: 18rpx;
+  right: 16rpx;
+  z-index: 2;
+}
+
+.detail-card-copy {
+  position: absolute;
+  right: 16rpx;
+  bottom: 14rpx;
+  z-index: 2;
+}
+
+.pool-card-v2-detail-structured .detail-card-copy {
+  bottom: 12rpx;
+}
+
+.pool-card-v2-copy {
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f5f7fa;
+  border: 2rpx solid #e8ecf0;
+}
+
+.pool-card-v2-copy:active {
+  background: #eef1f4;
+}
+
+.copy-icon {
+  position: relative;
+  width: 26rpx;
+  height: 28rpx;
+}
+
+.copy-icon::before,
+.copy-icon::after {
+  content: "";
+  position: absolute;
+  box-sizing: border-box;
+  border: 2rpx solid #68717d;
+  border-radius: 4rpx;
+  background: #ffffff;
+}
+
+.copy-icon::before {
+  width: 18rpx;
+  height: 20rpx;
+  top: 0;
+  right: 0;
+  z-index: 2;
+}
+
+.copy-icon::after {
+  width: 18rpx;
+  height: 20rpx;
+  bottom: 0;
+  left: 0;
+  background: #f5f7fa;
 }
 
 .detail-card-title {
@@ -137,28 +203,14 @@
   white-space: nowrap;
 }
 
-.detail-page .res-section-head-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16rpx;
-  margin: 16rpx 0 8rpx;
-}
-
 .detail-page .res-section-head {
   margin: 0;
   font-size: 26rpx;
 }
 
-.detail-page .res-section:first-child .res-section-head-row {
+.detail-page .res-section:first-child .res-section-head {
   margin-top: 0;
-}
-
-.detail-copy-link {
-  flex-shrink: 0;
-  font-size: 24rpx;
-  font-weight: 700;
-  color: #176b5b;
+  margin-bottom: 8rpx;
 }
 
 .res-spec-card {

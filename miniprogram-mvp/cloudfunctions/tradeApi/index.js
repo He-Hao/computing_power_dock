@@ -1781,6 +1781,9 @@ function looksLikeTradeIdKeywordCloud(keyword) {
   if (/^(URES|UDEM|UCON|SRES|SDEM|SCER|SMAT|SUB|RES|DEM)-/i.test(text)) {
     return true
   }
+  if (/^\d{10}-[0-9A-Z]{3}$/i.test(text)) {
+    return true
+  }
   return /^\d{8}-\d{6}-[0-9A-Z]{4}$/i.test(text)
 }
 

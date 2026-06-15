@@ -3,13 +3,13 @@
  *
  * | 前缀   | 含义           | 示例 |
  * | ------ | -------------- | ---- |
- * | URES-  | 公示资源（池） | URES-20250610-143022-K7M3 |
- * | UDEM-  | 公示需求（池） | UDEM-20250610-143055-P2N8 |
- * | UCON-  | 对接/匹配记录  | UCON-20250610-144012-R5T1 |
- * | SRES-  | 资源发布提交   | SRES-20250610-143022-A1B2 |
- * | SDEM-  | 需求发布提交   | SDEM-20250610-143055-C3D4 |
+ * | URES-  | 公示资源（池） | URES-2506101430-K7M |
+ * | UDEM-  | 公示需求（池） | UDEM-2506101430-P2N |
+ * | UCON-  | 对接/匹配记录  | UCON-2506101440-R5T |
+ * | SRES-  | 资源发布提交   | SRES-2506101430-A1B |
+ * | SDEM-  | 需求发布提交   | SDEM-2506101430-C3D |
  *
- * 兼容旧数据：RES- / DEM- / SUB- 前缀仍有效。
+ * 后缀格式：YYMMDDHHMM-XXX（兼容旧版 YYYYMMDD-HHMMSS-XXXX）。
  */
 
 var ID_PREFIX = {
@@ -31,17 +31,16 @@ function pad2(value) {
 
 function formatIdDatePart(date) {
   date = date || new Date()
-  return date.getFullYear()
+  var year = String(date.getFullYear())
+  return year.slice(-2)
     + pad2(date.getMonth() + 1)
     + pad2(date.getDate())
-    + "-"
     + pad2(date.getHours())
     + pad2(date.getMinutes())
-    + pad2(date.getSeconds())
 }
 
 function randomSuffix(length) {
-  length = length || 4
+  length = length || 3
   var out = ""
   for (var i = 0; i < length; i += 1) {
     out += RANDOM_ALPHABET.charAt(Math.floor(Math.random() * RANDOM_ALPHABET.length))
@@ -53,7 +52,7 @@ function generateTradeId(prefix) {
   if (!prefix) {
     throw new Error("generateTradeId 需要前缀")
   }
-  return prefix + formatIdDatePart() + "-" + randomSuffix(4)
+  return prefix + formatIdDatePart() + "-" + randomSuffix()
 }
 
 function generateResourceListingId() {
@@ -117,6 +116,9 @@ function looksLikeTradeIdKeyword(keyword) {
     return false
   }
   if (/^(URES|UDEM|UCON|SRES|SDEM|SCER|SMAT|SUB|RES|DEM)-/i.test(text)) {
+    return true
+  }
+  if (/^\d{10}-[0-9A-Z]{3}$/i.test(text)) {
     return true
   }
   return /^\d{8}-\d{6}-[0-9A-Z]{4}$/i.test(text)

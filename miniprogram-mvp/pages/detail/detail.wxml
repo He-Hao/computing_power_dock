@@ -24,20 +24,20 @@
 
   <block wx:if="{{listingLayout}}">
     <view class="res-section">
-      <view class="res-section-head-row">
-        <view class="res-section-head">{{listingLayout.heroSectionTitle || '整体说明'}}</view>
-        <text class="detail-copy-link" bindtap="copyListingText">复制文字</text>
-      </view>
+      <view class="res-section-head">{{listingLayout.heroSectionTitle || '整体说明'}}</view>
       <view class="pool-card-v2 {{isResource ? 'pool-card-v2-resource' : 'pool-card-v2-demand'}} pool-card-v2-detail {{listingLayout.layoutMode === 'structured' ? 'pool-card-v2-detail-structured' : ''}}">
+        <view class="pool-card-v2-star detail-card-favorite {{isFavorited ? 'active' : ''}}" bindtap="toggleFavorite">
+          <text class="favorite-glyph">{{isFavorited ? '★' : '☆'}}</text>
+        </view>
+        <view class="pool-card-v2-copy detail-card-copy" bindtap="copyListingText">
+          <view class="copy-icon"></view>
+        </view>
         <view class="pool-card-v2-head">
           <view class="pool-card-v2-meta-left">
             <text class="pool-card-v2-type">{{item.type}}</text>
             <text class="pool-card-v2-badge {{displayProxyBadge.badgeClass}}" wx:if="{{displayProxyBadge}}">{{displayProxyBadge.text}}</text>
             <text class="pool-card-v2-badge" wx:if="{{displayCertBadge && !isStaffProxyView && !verificationView}}">{{displayCertBadge.text}}</text>
             <text class="pool-card-v2-status" wx:if="{{!isResource && item.isUserPublished && item.verification === '待审核'}}">待审</text>
-          </view>
-          <view class="pool-card-v2-star {{isFavorited ? 'active' : ''}}" bindtap="toggleFavorite">
-            <text class="favorite-glyph">{{isFavorited ? '★' : '☆'}}</text>
           </view>
         </view>
         <view class="pool-card-v2-title detail-card-title">{{item.title}}</view>
