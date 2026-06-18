@@ -133,6 +133,7 @@ const shareIntentKey = "compute_trade_share_intent"
 const homeGuideDismissKey = "compute_trade_home_guide_dismiss"
 const rejectionNoticeSeenKey = "compute_trade_rejection_notice_seen"
 const listingReportsKey = "compute_trade_listing_reports"
+const adminListingReportsHistoryKey = "compute_trade_admin_listing_reports_history"
 const viewedResourcesKey = "compute_trade_viewed_resources"
 const viewedDemandsKey = "compute_trade_viewed_demands"
 const favoritesKey = "compute_trade_favorites"
@@ -320,6 +321,7 @@ module.exports = {
   homeGuideDismissKey,
     rejectionNoticeSeenKey,
     listingReportsKey,
+  adminListingReportsHistoryKey,
   viewedResourcesKey,
   viewedDemandsKey,
   platformBlankVersion,

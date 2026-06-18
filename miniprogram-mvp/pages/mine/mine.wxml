@@ -153,6 +153,20 @@
               <text class="menu-arrow">›</text>
             </view>
           </view>
+          <view class="menu-item" bindtap="goReportRecords">
+            <text class="menu-icon menu-icon-report">举</text>
+            <view class="menu-body">
+              <view class="menu-label-row">
+                <text class="menu-label">我的举报</text>
+                <text class="menu-badge menu-badge-alert" wx:if="{{reportStats.pending > 0}}">{{reportStats.pending}} 待处理</text>
+              </view>
+              <text class="menu-desc">{{reportStats.summary}}</text>
+            </view>
+            <view class="menu-item-right">
+              <text class="menu-extra" wx:if="{{reportStats.count > 0}}">{{reportStats.count}} 条</text>
+              <text class="menu-arrow">›</text>
+            </view>
+          </view>
         </view>
       </view>
 
@@ -277,6 +291,10 @@
           <view class="admin-tab {{opsReviewTab === 'proxyConnect' ? 'active' : ''}}" data-tab="proxyConnect" bindtap="switchOpsReviewTab">
             <text>代发对接</text>
             <text class="admin-tab-count">{{opsStats.pendingProxyConnect || 0}}</text>
+          </view>
+          <view class="admin-tab {{opsReviewTab === 'report' ? 'active' : ''}}" data-tab="report" bindtap="switchOpsReviewTab">
+            <text>举报</text>
+            <text class="admin-tab-count">{{opsStats.pendingReports || 0}}</text>
           </view>
         </view>
         <view class="admin-empty card" wx:if="{{opsReviewItems.length === 0}}">

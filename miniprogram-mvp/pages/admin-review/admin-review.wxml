@@ -21,6 +21,21 @@
     <view class="review-summary">{{item.summary}}</view>
   </view>
 
+  <view class="card" wx:if="{{item.isListingReport && item.reportedListing}}">
+    <view class="section-title compact">被举报商机</view>
+    <view class="review-row"><text class="label">商机编号</text><text>{{item.reportedListing.id}}</text></view>
+    <view class="review-row"><text class="label">类型</text><text>{{item.reportedListing.poolLabel}} · {{item.reportedListing.type || '未分类'}}</text></view>
+    <view class="review-row"><text class="label">标题</text><text>{{item.reportedListing.title}}</text></view>
+    <view class="review-row" wx:if="{{item.reportedListing.region}}"><text class="label">地域</text><text>{{item.reportedListing.region}}</text></view>
+    <view class="review-row"><text class="label">公示状态</text><text>{{item.reportedListing.verification || '未知'}}{{item.reportedListing.closed ? '（已下架）' : ''}}</text></view>
+    <view class="admin-action-btn ghost report-open-listing" bindtap="openReportedListing">查看商机详情</view>
+  </view>
+
+  <view class="card" wx:if="{{item.isListingReport && item.reportReason}}">
+    <view class="section-title compact">举报原因</view>
+    <view class="review-summary">{{item.reportReason}}</view>
+  </view>
+
   <view class="card" wx:if="{{item.isProxyConnectReview && item.proxyInfo}}">
     <view class="section-title compact">代发信息</view>
     <view class="review-row"><text class="label">代发类型</text><text>{{item.proxyInfo.proxySide || '代发商机'}}</text></view>
@@ -76,13 +91,14 @@
 
   <view class="card notice-card">
     <view class="notice-title">审核说明</view>
-    <view class="notice-text" wx:if="{{item.isProxyConnectReview}}">请核对代发商机与对接双方信息。批准后进入「待对方确认」，由资源方或需求方确认是否愿意沟通；驳回将关闭该对接申请。</view>
+    <view class="notice-text" wx:if="{{item.isListingReport}}">请核对被举报商机内容与举报人说明。成立将下架该商机并关闭相关对接；驳回将通知举报人核查结果。</view>
+    <view class="notice-text" wx:elif="{{item.isProxyConnectReview}}">请核对代发商机与对接双方信息。批准后进入「待对方确认」，由资源方或需求方确认是否愿意沟通；驳回将关闭该对接申请。</view>
     <view class="notice-text" wx:else>请核对申请方身份、业务信息真实性和完整度。通过后继续公示或进入后续撮合；驳回将通知用户并下架相关内容。</view>
   </view>
 
   <view class="action-bar">
-    <view class="button-secondary reject-btn {{reviewLoading ? 'btn-busy' : ''}}" bindtap="rejectReview">{{reviewLoading === 'reject' ? '处理中...' : (item.isProxyConnectReview ? '驳回对接' : '驳回')}}</view>
-    <view class="button-primary approve-btn {{reviewLoading ? 'btn-busy' : ''}}" bindtap="approveReview">{{reviewLoading === 'approve' ? '处理中...' : (item.isProxyConnectReview ? '批准对接' : '通过审核')}}</view>
+    <view class="button-secondary reject-btn {{reviewLoading ? 'btn-busy' : ''}}" bindtap="rejectReview">{{reviewLoading === 'reject' ? '处理中...' : (item.isListingReport ? '驳回举报' : (item.isProxyConnectReview ? '驳回对接' : '驳回'))}}</view>
+    <view class="button-primary approve-btn {{reviewLoading ? 'btn-busy' : ''}}" bindtap="approveReview">{{reviewLoading === 'approve' ? '处理中...' : (item.isListingReport ? '成立下架' : (item.isProxyConnectReview ? '批准对接' : '通过审核'))}}</view>
   </view>
 </view>
 

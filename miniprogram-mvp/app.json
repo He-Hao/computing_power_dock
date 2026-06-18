@@ -27,7 +27,9 @@
     "pages/ops-connect-detail/ops-connect-detail",
     "pages/admin/admin",
     "pages/admin-review/admin-review",
-    "pages/admin-governance/admin-governance"
+    "pages/admin-governance/admin-governance",
+    "pages/ops-reports/ops-reports",
+    "pages/report-records/report-records"
   ],
   "window": {
     "navigationBarTitleText": "算力码头",

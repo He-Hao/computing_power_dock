@@ -12,6 +12,7 @@ const cloudSyncWarningKey = "compute_trade_cloud_sync_warning"
 const adminPendingListingsKey = "compute_trade_admin_pending_listings"
 const adminPendingSubmissionsKey = "compute_trade_admin_pending_submissions"
 const adminAllPendingSubmissionsKey = "compute_trade_admin_all_pending_submissions"
+const adminListingReportsHistoryKey = "compute_trade_admin_listing_reports_history"
 const staffGlobalConnectsKey = "compute_trade_staff_global_connects"
 const favorites = require("./favorites")
 const userAuth = require("./userAuth")
@@ -81,6 +82,9 @@ function getCloudErrorMessage(err) {
     }
     if (err.errMsg.indexOf("timeout") > -1 || err.errMsg.indexOf("-504003") > -1 || err.errMsg.indexOf("FUNCTIONS_TIME_LIMIT_EXCEEDED") > -1) {
       return "云函数执行超时（3秒默认限制）：请在开发者工具右键 cloudfunctions/tradeApi →「上传并部署：云端安装依赖」，部署后超时将提升至 120 秒"
+    }
+    if (err.errMsg.indexOf("-501023") > -1 || err.errMsg.indexOf("Unauthenticated") > -1) {
+      return "云环境未开放访问权限（-501023）：请在云开发控制台 → 设置 → 权限设置 → 开启「未登录用户可访问云资源」；并在云函数 tradeApi → 云函数权限中允许未登录用户调用。若使用 prod 环境，请确认该环境已绑定当前小程序 AppID"
     }
     return err.errMsg
   }
@@ -588,6 +592,19 @@ function refreshUserDataAfterWrite() {
   })
 }
 
+function listStaffListingReportsRemote(options) {
+  options = options || {}
+  if (!isCloudEnabled()) {
+    return Promise.resolve({ ok: true, local: true, data: { items: [] } })
+  }
+  return callTradeApi("listStaffListingReports", {
+    scope: options.scope || "history",
+    limit: options.limit || 80
+  }, {
+    silent: options.silent === true
+  })
+}
+
 function clearCloudLocalCache() {
   bumpLocalCacheGeneration()
   wx.removeStorageSync(userProfileKey)
@@ -601,6 +618,7 @@ function clearCloudLocalCache() {
   wx.removeStorageSync(adminPendingListingsKey)
   wx.removeStorageSync(adminPendingSubmissionsKey)
   wx.removeStorageSync(adminAllPendingSubmissionsKey)
+  wx.removeStorageSync(adminListingReportsHistoryKey)
   wx.removeStorageSync(staffGlobalConnectsKey)
   saveCloudStatus("pending")
 }
@@ -1281,6 +1299,7 @@ module.exports = {
   refreshStaffWorkbench: refreshStaffWorkbench,
   applyStaffGlobalConnectData: applyStaffGlobalConnectData,
   listStaffGlobalConnectsRemote: listStaffGlobalConnectsRemote,
+  listStaffListingReportsRemote: listStaffListingReportsRemote,
   pullUserDataFromCloud: pullUserDataFromCloud,
   refreshUserDataAfterWrite: refreshUserDataAfterWrite,
   registerUserRemote: registerUserRemote,

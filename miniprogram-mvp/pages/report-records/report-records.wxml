@@ -1,0 +1,36 @@
+<view class="page report-records-page">
+  <view class="page-tip card" wx:if="{{records.length > 0}}">
+    您提交的商机举报会在此显示处理进度；平台核实后将下架违规商机或驳回举报。
+  </view>
+
+  <view class="empty" wx:if="{{records.length === 0}}">
+    暂无举报记录。在资源/需求详情页可举报虚假信息。
+  </view>
+
+  <block wx:for="{{records}}" wx:key="id">
+    <view class="card record-card {{newItemsStartIndex >= 0 && index >= newItemsStartIndex ? 'list-item-enter' : ''}}">
+      <view class="record-card-head">
+        <view class="record-tags">
+          <text class="tag">商机举报</text>
+          <text class="status-badge {{item.statusBadgeClass}}">{{item.displayStatus}}</text>
+        </view>
+        <text class="muted record-time">{{item.relativeTime}}</text>
+      </view>
+
+      <view class="record-card-title">{{item.listingTitle}}</view>
+      <view class="muted record-summary" wx:if="{{item.summaryLine}}">{{item.summaryLine}}</view>
+      <view class="muted record-summary" wx:if="{{item.reportListingId}}">商机编号：{{item.reportListingId}}</view>
+
+      <view class="record-actions">
+        <view class="btn-ghost" catchtap="goRecord" data-id="{{item.id}}">查看详情</view>
+        <view class="btn-ghost" catchtap="goListing" data-id="{{item.reportListingId}}" wx:if="{{item.reportListingId}}">查看商机</view>
+      </view>
+    </view>
+  </block>
+
+  <list-pagination-foot
+    total="{{filteredCount}}"
+    loading="{{loadingMore}}"
+    has-more="{{hasMoreDisplay}}"
+  />
+</view>

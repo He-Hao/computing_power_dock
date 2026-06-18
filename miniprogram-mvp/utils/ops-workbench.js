@@ -1,7 +1,17 @@
 function enrichReviewItem(item, data) {
   var tagClass = "resource"
   var typeName = item.typeName || ""
+  var isListingReport = item.submission && data.isListingReportSubmission(item.submission)
   var isProxyConnect = item.submission && data.isProxyConnectReviewSubmission(item.submission)
+  if (isListingReport) {
+    return Object.assign({}, item, {
+      tagClass: "danger",
+      typeName: "商机举报",
+      statusLabel: "待处理",
+      contactLine: [item.contact, item.phone].filter(Boolean).join(" · "),
+      reportReason: item.reportReason || (item.submission && item.submission.reportReason) || ""
+    })
+  }
   if (isProxyConnect) {
     var summary = data.getProxyConnectReviewSummary(item.submission) || {}
     return Object.assign({}, item, {
@@ -32,6 +42,7 @@ function enrichReviewItem(item, data) {
 function buildReviewQueueView(data, tab) {
   tab = tab || "all"
   var isProxyConnectTab = tab === "proxyConnect"
+  var isReportTab = tab === "report"
   var emptyCopy = {
     all: {
       title: "暂无待审内容",
@@ -52,6 +63,10 @@ function buildReviewQueueView(data, tab) {
     proxyConnect: {
       title: "暂无待审代发对接",
       text: "代发对接申请暂无待处理项"
+    },
+    report: {
+      title: "暂无待处理举报",
+      text: "用户举报的虚假信息暂无待处理项"
     }
   }
   var empty = emptyCopy[tab] || emptyCopy.all
@@ -62,10 +77,11 @@ function buildReviewQueueView(data, tab) {
     tab: tab,
     items: items,
     isProxyConnectTab: isProxyConnectTab,
+    isReportTab: isReportTab,
     emptyTitle: empty.title,
     emptyText: empty.text,
-    approveLabel: isProxyConnectTab ? "批准" : "通过",
-    rejectLabel: "驳回"
+    approveLabel: isProxyConnectTab ? "批准" : (isReportTab ? "成立下架" : "通过"),
+    rejectLabel: isReportTab ? "驳回举报" : "驳回"
   }
 }
 
@@ -149,15 +165,22 @@ function buildAdminGovernanceSection() {
   }
 }
 
-function buildMonitorFeatureSection(connectStats) {
+function buildMonitorFeatureSection(connectStats, reportStats) {
   connectStats = connectStats || { total: 0, active: 0, pendingPlatform: 0 }
-  var badge = ""
+  reportStats = reportStats || { pending: 0, history: 0 }
+  var connectBadge = ""
   if (connectStats.pendingPlatform > 0) {
-    badge = connectStats.pendingPlatform + " 待审"
+    connectBadge = connectStats.pendingPlatform + " 待审"
   } else if (connectStats.active > 0) {
-    badge = connectStats.active + " 进行中"
+    connectBadge = connectStats.active + " 进行中"
   } else if (connectStats.total > 0) {
-    badge = connectStats.total + " 条"
+    connectBadge = connectStats.total + " 条"
+  }
+  var reportBadge = ""
+  if (reportStats.pending > 0) {
+    reportBadge = reportStats.pending + " 待处理"
+  } else if (reportStats.history > 0) {
+    reportBadge = reportStats.history + " 条"
   }
   return {
     key: "monitor",
@@ -167,8 +190,15 @@ function buildMonitorFeatureSection(connectStats) {
         key: "global-connects",
         icon: "接",
         title: "全局对接",
-        badge: badge,
+        badge: connectBadge,
         action: "global-connects"
+      },
+      {
+        key: "listing-reports",
+        icon: "举",
+        title: "举报处理",
+        badge: reportBadge,
+        action: "listing-reports"
       }
     ]
   }
@@ -188,6 +218,7 @@ function loadOpsWorkbenchData(data, reviewTab) {
   var stats = data.getAdminHubStats()
   var proxyStats = data.getStaffProxyHubStats()
   var connectStats = data.getStaffGlobalConnectStats()
+  var reportHistory = data.getStaffListingReportHistory()
   var reviewQueue = buildReviewQueueView(data, reviewTab || "all")
   var connectActions = buildConnectActionView(data)
   var payload = {
@@ -195,7 +226,10 @@ function loadOpsWorkbenchData(data, reviewTab) {
     reviewQueue: reviewQueue,
     connectActions: connectActions,
     proxySection: buildProxyFeatureSection(proxyStats),
-    monitorSection: buildMonitorFeatureSection(connectStats),
+    monitorSection: buildMonitorFeatureSection(connectStats, {
+      pending: stats.pendingReports || 0,
+      history: reportHistory.length
+    }),
     demoDataSection: buildDemoDataSection(),
     governanceSection: null
   }

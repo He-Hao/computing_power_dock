@@ -4191,6 +4191,35 @@ async function patchSubmission(openid, payload) {
   return { ok: true, data: { submission: next, listing: next.listing || null } }
 }
 
+async function listStaffListingReports(openid, payload) {
+  payload = payload || {}
+  var staff = await verifyStaffAccess(openid, payload)
+  if (!staff) {
+    return { ok: false, message: "无运营权限，请使用已开通运营账号（manager 或 admin）登录" }
+  }
+  var limit = payload.limit > 0 ? Math.min(payload.limit, 100) : 80
+  var scope = payload.scope || "history"
+  var reportsRes = await db.collection(COL_SUBMISSIONS)
+    .where({ isListingReport: true })
+    .limit(limit)
+    .get()
+  var items = (reportsRes.data || []).filter(function(item) {
+    if (scope === "pending") {
+      return item.status === "待审核"
+    }
+    return item.status !== "待审核"
+  })
+  items.sort(function(a, b) {
+    return (b.createdAt || "").localeCompare(a.createdAt || "")
+  })
+  return {
+    ok: true,
+    data: {
+      items: items.slice(0, limit),
+      total: items.length
+    }
+  }
+}
 
 async function adminReview(openid, payload) {
   var admin = await verifyStaffAccess(openid)
@@ -4250,6 +4279,56 @@ async function adminReview(openid, payload) {
     var record = await getSubmissionById(payload.id)
     if (!record) {
       return { ok: false, message: "申请不存在" }
+    }
+    if (record.isListingReport) {
+      if (payload.action === "approve") {
+        var reportListingId = String(record.reportListingId || "").trim()
+        if (reportListingId) {
+          var reportedListing = await getListingById(reportListingId)
+          if (reportedListing && !isListingClosed(reportedListing)) {
+            await removeListingById(reportedListing.id)
+            await closeUnfinishedConnectsForListingCloud(reportedListing.id)
+            if (reportedListing.submissionId) {
+              var reportedSub = await getSubmissionById(reportedListing.submissionId)
+              if (reportedSub) {
+                reportedSub.status = "已关闭"
+                reportedSub.listingId = ""
+                reportedSub.statusTimeline = reportedSub.statusTimeline || []
+                reportedSub.statusTimeline.push({
+                  status: "已关闭",
+                  time: formatDate(new Date()),
+                  hint: payload.reason || "因用户举报成立，平台已下架该商机。"
+                })
+                reportedSub.reviewResult = "下架"
+                await saveSubmissionDoc(reportedSub)
+              }
+            }
+          }
+        }
+        record.status = "已关闭"
+        record.statusTimeline = record.statusTimeline || []
+        record.statusTimeline.push({
+          status: "已关闭",
+          time: formatDate(new Date()),
+          hint: payload.reason || "举报成立，被举报商机已下架。"
+        })
+        record.reviewResult = "成立"
+        await saveSubmissionDoc(record)
+        return { ok: true, data: { submission: record, removedListingId: reportListingId } }
+      }
+      if (payload.action === "reject") {
+        record.status = "已关闭"
+        record.statusTimeline = record.statusTimeline || []
+        record.statusTimeline.push({
+          status: "已关闭",
+          time: formatDate(new Date()),
+          hint: payload.reason || "经核查未发现违规，举报驳回。"
+        })
+        record.reviewResult = "驳回"
+        await saveSubmissionDoc(record)
+        return { ok: true, data: { submission: record } }
+      }
+      return { ok: false, message: "无效操作" }
     }
     if (payload.action === "approve") {
       if (record.type === "certify") {
@@ -5075,6 +5154,8 @@ exports.main = async function(event) {
         return await staffWorkbenchSync(openid, payload)
       case "listStaffGlobalConnects":
         return await listStaffGlobalConnects(openid, payload)
+      case "listStaffListingReports":
+        return await listStaffListingReports(openid, payload)
       case "registerUser":
         return await registerUser(openid, payload)
       case "loginUser":

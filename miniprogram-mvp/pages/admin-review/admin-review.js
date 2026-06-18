@@ -154,6 +154,32 @@ Page({
     }
     const data = require("../../utils/data")
     var isProxyConnect = !!item.isProxyConnectReview
+    var isListingReport = !!item.isListingReport
+    if (isListingReport) {
+      wx.showModal({
+        title: "举报成立",
+        content: "确认举报成立并下架被举报商机？",
+        confirmText: "成立下架",
+        confirmColor: "#176b5b",
+        success: function(res) {
+          if (!res.confirm) {
+            return
+          }
+          this.setData({ reviewLoading: "approve" })
+          data.approveListingReportReview(item.submissionId).then(function() {
+            wx.showToast({ title: "已下架商机", icon: "success" })
+            setTimeout(function() {
+              wx.navigateBack()
+            }, 600)
+          }).catch(function(error) {
+            wx.showToast({ title: error.message || "操作失败", icon: "none" })
+          }).finally(function() {
+            this.setData({ reviewLoading: "" })
+          }.bind(this))
+        }.bind(this)
+      })
+      return
+    }
     this.setData({ reviewLoading: "approve" })
     var actionPromise
     if (item.reviewType === "listing") {
@@ -180,25 +206,31 @@ Page({
     }
     const data = require("../../utils/data")
     var isProxyConnect = !!item.isProxyConnectReview
+    var isListingReport = !!item.isListingReport
     wx.showModal({
-      title: isProxyConnect ? "驳回对接" : "驳回审核",
+      title: isListingReport ? "驳回举报" : (isProxyConnect ? "驳回对接" : "驳回审核"),
       editable: true,
-      placeholderText: "请填写驳回说明，将通知申请人",
-      confirmText: "确认驳回",
+      placeholderText: isListingReport ? "请填写核查说明（可选）" : "请填写驳回说明，将通知申请人",
+      confirmText: isListingReport ? "驳回举报" : "确认驳回",
       confirmColor: "#c0392b",
       success: function(res) {
         if (!res.confirm) {
           return
         }
         var rejectReason = (res.content || "").trim()
-        if (!rejectReason) {
+        if (!rejectReason && !isListingReport) {
           wx.showToast({ title: "请填写驳回说明", icon: "none" })
           return
         }
         this.setData({ reviewLoading: "reject" })
-        var actionPromise = item.reviewType === "listing"
-          ? data.rejectListingReview(item.id, rejectReason)
-          : data.rejectSubmissionReview(item.submissionId, rejectReason)
+        var actionPromise
+        if (item.reviewType === "listing") {
+          actionPromise = data.rejectListingReview(item.id, rejectReason)
+        } else if (isListingReport) {
+          actionPromise = data.rejectListingReportReview(item.submissionId, rejectReason || "经核查未发现违规，举报驳回。")
+        } else {
+          actionPromise = data.rejectSubmissionReview(item.submissionId, rejectReason)
+        }
         Promise.resolve(actionPromise).then(function() {
           wx.showToast({ title: "已驳回", icon: "success" })
           setTimeout(function() {
@@ -210,6 +242,17 @@ Page({
           this.setData({ reviewLoading: "" })
         }.bind(this))
       }.bind(this)
+    })
+  },
+
+  openReportedListing() {
+    const item = this.data.item
+    if (!item || !item.reportListingId) {
+      return
+    }
+    const data = require("../../utils/data")
+    wx.navigateTo({
+      url: data.getDetailPageUrl(item.reportListingId)
     })
   },
 

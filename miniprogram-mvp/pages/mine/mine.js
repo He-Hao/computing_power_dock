@@ -48,6 +48,7 @@ Page({
       pendingCertify: 0,
       pendingBusiness: 0,
       pendingProxyConnect: 0,
+      pendingReports: 0,
       pendingTotal: 0
     },
     opsProxySection: null,
@@ -66,6 +67,7 @@ Page({
     favoriteCount: 0,
     favoriteResourceCount: 0,
     favoriteDemandCount: 0,
+    reportStats: { count: 0, pending: 0, summary: "暂无举报记录" },
     syncLoading: false,
     opsReviewBusyId: "",
     opsReviewBusyAction: ""
@@ -294,7 +296,8 @@ Page({
         userLoggedIn: userLoggedIn,
         favoriteCount: data.getFavoriteCount(),
         favoriteResourceCount: data.getFavoriteIds("resources").length,
-        favoriteDemandCount: data.getFavoriteIds("demands").length
+        favoriteDemandCount: data.getFavoriteIds("demands").length,
+        reportStats: userLoggedIn && !isStaffMode ? data.getUserListingReportStats() : { count: 0, pending: 0, summary: "暂无举报记录" }
       })
       this.updatePageTitle(isStaffMode)
       data.updateMineTabBadge()
@@ -574,6 +577,16 @@ Page({
     wx.navigateTo({ url: url })
   },
 
+  goReportRecords() {
+    const data = require("../../utils/data")
+    var url = "/pages/report-records/report-records"
+    if (!data.isUserRegistered()) {
+      data.promptRegistration({ redirect: url })
+      return
+    }
+    wx.navigateTo({ url: url })
+  },
+
   goFavoriteResources() {
     wx.navigateTo({ url: "/pages/favorite-pool/favorite-pool?pool=resources" })
   },
@@ -652,12 +665,21 @@ Page({
     }
     const data = require("../../utils/data")
     var isProxyConnect = item.submission && data.isProxyConnectReviewSubmission(item.submission)
+    var isListingReport = item.submission && data.isListingReportSubmission(item.submission)
     this.setData({ opsReviewBusyId: id, opsReviewBusyAction: "approve" })
-    var actionPromise = item.reviewType === "listing"
-      ? data.approveListingReview(item.id)
-      : data.approveSubmissionReview(item.submissionId)
+    var actionPromise
+    if (item.reviewType === "listing") {
+      actionPromise = data.approveListingReview(item.id)
+    } else if (isListingReport) {
+      actionPromise = data.approveListingReportReview(item.submissionId)
+    } else {
+      actionPromise = data.approveSubmissionReview(item.submissionId)
+    }
     Promise.resolve(actionPromise).then(function() {
-      wx.showToast({ title: isProxyConnect ? "已批准对接" : "已通过", icon: "success" })
+      wx.showToast({
+        title: isListingReport ? "已下架商机" : (isProxyConnect ? "已批准对接" : "已通过"),
+        icon: "success"
+      })
       this.loadMineData()
     }.bind(this)).catch(function(error) {
       wx.showToast({ title: error.message || "操作失败", icon: "none" })
@@ -677,25 +699,31 @@ Page({
     }
     const data = require("../../utils/data")
     var isProxyConnect = item.submission && data.isProxyConnectReviewSubmission(item.submission)
+    var isListingReport = item.submission && data.isListingReportSubmission(item.submission)
     wx.showModal({
-      title: isProxyConnect ? "驳回对接" : "驳回审核",
+      title: isListingReport ? "驳回举报" : (isProxyConnect ? "驳回对接" : "驳回审核"),
       editable: true,
-      placeholderText: "请填写驳回说明，将通知申请人",
-      confirmText: "确认驳回",
+      placeholderText: isListingReport ? "请填写核查说明（可选）" : "请填写驳回说明，将通知申请人",
+      confirmText: isListingReport ? "驳回举报" : "确认驳回",
       confirmColor: "#c0392b",
       success: function(res) {
         if (!res.confirm) {
           return
         }
         var rejectReason = (res.content || "").trim()
-        if (!rejectReason) {
+        if (!rejectReason && !isListingReport) {
           wx.showToast({ title: "请填写驳回说明", icon: "none" })
           return
         }
         this.setData({ opsReviewBusyId: id, opsReviewBusyAction: "reject" })
-        var actionPromise = item.reviewType === "listing"
-          ? data.rejectListingReview(item.id, rejectReason)
-          : data.rejectSubmissionReview(item.submissionId, rejectReason)
+        var actionPromise
+        if (item.reviewType === "listing") {
+          actionPromise = data.rejectListingReview(item.id, rejectReason)
+        } else if (isListingReport) {
+          actionPromise = data.rejectListingReportReview(item.submissionId, rejectReason || "经核查未发现违规，举报驳回。")
+        } else {
+          actionPromise = data.rejectSubmissionReview(item.submissionId, rejectReason)
+        }
         Promise.resolve(actionPromise).then(function() {
           wx.showToast({ title: "已驳回", icon: "success" })
           this.loadMineData()
@@ -712,6 +740,10 @@ Page({
     var action = event.currentTarget.dataset.action
     if (action === "global-connects") {
       wx.navigateTo({ url: "/pages/ops-connects/ops-connects" })
+      return
+    }
+    if (action === "listing-reports") {
+      wx.navigateTo({ url: "/pages/ops-reports/ops-reports" })
       return
     }
     if (action === "proxy-hub") {

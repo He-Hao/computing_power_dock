@@ -1,0 +1,71 @@
+<view class="page ops-reports-page">
+  <view class="proxy-hero">
+    <view class="proxy-title">举报处理</view>
+    <view class="proxy-stats">
+      <view class="proxy-stat">
+        <view class="proxy-stat-value">{{stats.pending}}</view>
+        <view class="proxy-stat-label">待处理</view>
+      </view>
+      <view class="proxy-stat-split"></view>
+      <view class="proxy-stat">
+        <view class="proxy-stat-value">{{stats.history}}</view>
+        <view class="proxy-stat-label">已处理</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="proxy-toolbar card">
+    <scroll-view scroll-x class="filter-scroll proxy-filter-row" enhanced show-scrollbar="{{false}}">
+      <view class="filter-scroll-inner">
+        <view
+          class="filter-chip {{activeTab === item.value ? 'active' : ''}}"
+          wx:for="{{tabFilters}}"
+          wx:key="value"
+          bindtap="setTab"
+          data-value="{{item.value}}"
+        >{{item.label}}</view>
+      </view>
+    </scroll-view>
+    <view class="proxy-result-count">共 {{filteredCount}} 条</view>
+  </view>
+
+  <view class="proxy-list-body">
+    <view class="proxy-empty card" wx:if="{{items.length === 0}}">
+      <view class="proxy-empty-title">{{emptyTitle}}</view>
+      <view class="proxy-empty-text" wx:if="{{emptyText}}">{{emptyText}}</view>
+    </view>
+
+    <view
+      class="card report-card {{newItemsStartIndex >= 0 && index >= newItemsStartIndex ? 'list-item-enter' : ''}}"
+      wx:for="{{items}}"
+      wx:key="id"
+      bindtap="openReport"
+      data-id="{{item.id}}"
+    >
+      <view class="report-card-head">
+        <text class="tag danger">商机举报</text>
+        <text class="status-badge {{item.statusBadgeClass}}">{{item.displayStatus}}</text>
+        <text class="report-card-time">{{item.relativeTime}}</text>
+      </view>
+      <view class="report-card-title">{{item.listingTitle}}</view>
+      <view class="report-card-meta">
+        <text wx:if="{{item.reportListingId}}">编号 {{item.reportListingId}}</text>
+        <text wx:if="{{item.listingPoolLabel}}"> · {{item.listingPoolLabel}}</text>
+        <text wx:if="{{item.listingRegion}}"> · {{item.listingRegion}}</text>
+      </view>
+      <view class="report-card-reason" wx:if="{{item.reportReason}}">原因：{{item.reportReason}}</view>
+      <view class="report-card-meta">举报人：{{item.reporterCompany || '未填企业'}} · {{item.reporterPhone}}</view>
+      <view class="report-card-actions" wx:if="{{activeTab === 'pending'}}">
+        <view class="report-action-btn ghost" catchtap="openReport" data-id="{{item.id}}">详情</view>
+        <view class="report-action-btn reject {{busyId === item.id ? 'btn-busy' : ''}}" catchtap="rejectReport" data-id="{{item.id}}">{{busyId === item.id && busyAction === 'reject' ? '处理中...' : '驳回'}}</view>
+        <view class="report-action-btn primary {{busyId === item.id ? 'btn-busy' : ''}}" catchtap="approveReport" data-id="{{item.id}}">{{busyId === item.id && busyAction === 'approve' ? '处理中...' : '成立下架'}}</view>
+      </view>
+    </view>
+  </view>
+
+  <list-pagination-foot
+    total="{{filteredCount}}"
+    loading="{{loadingMore}}"
+    has-more="{{hasMoreDisplay}}"
+  />
+</view>

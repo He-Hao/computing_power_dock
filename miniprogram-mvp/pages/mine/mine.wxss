@@ -355,6 +355,11 @@
   color: #b45309;
 }
 
+.menu-icon-report {
+  background: #fdecea;
+  color: #c0392b;
+}
+
 .menu-icon-resource {
   background: #e8f4ff;
   color: #1d6fb8;

@@ -1,0 +1,5 @@
+@import "../cert-records/cert-records.wxss";
+
+.report-records-page {
+  padding-bottom: 40rpx;
+}

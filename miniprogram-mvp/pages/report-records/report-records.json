@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "我的举报",
+  "enablePullDownRefresh": true,
+  "onReachBottomDistance": 120,
+  "usingComponents": {
+    "list-pagination-foot": "/components/list-pagination-foot/list-pagination-foot"
+  }
+}

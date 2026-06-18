@@ -921,6 +921,11 @@ page {
   color: #8a4f12;
 }
 
+.tag.danger {
+  background: #fdecea;
+  color: #c0392b;
+}
+
 .tag.resource {
   background: #e9f5f1;
   color: #176b5b;

@@ -40,6 +40,7 @@ const shareIntentKey = C.shareIntentKey
 const homeGuideDismissKey = C.homeGuideDismissKey
 const rejectionNoticeSeenKey = C.rejectionNoticeSeenKey
 const listingReportsKey = C.listingReportsKey
+const adminListingReportsHistoryKey = C.adminListingReportsHistoryKey
 const viewedResourcesKey = C.viewedResourcesKey
 const viewedDemandsKey = C.viewedDemandsKey
 const platformBlankVersion = C.platformBlankVersion
@@ -116,11 +117,12 @@ function isPublicListingsServerFiltered(pool) {
   return !!meta.serverFiltered
 }
 
-function refreshAllPublicListings() {
+function refreshAllPublicListings(options) {
+  options = options || {}
   if (!isCloudEnabled()) {
     return Promise.resolve({ ok: true, local: true })
   }
-  return cloudStore.fetchBothPublicListings()
+  return cloudStore.fetchBothPublicListings(options)
 }
 
 function markPoolNeedsForceRefresh() {
@@ -4356,6 +4358,9 @@ function getSubmissionDisplayStatus(item) {
   if (!item) {
     return ""
   }
+  if (item.isListingReport) {
+    return getListingReportDisplayStatus(item)
+  }
   if (item.type === "connect") {
     return connectStage.deriveConnectDisplayStatus(item)
   }
@@ -4519,6 +4524,9 @@ function getSubmissionReviewQueue() {
       if (listingSubmissionIds[item.id]) {
         return false
       }
+      if (isListingReportSubmission(item)) {
+        return false
+      }
       if (item.type === "certify" && !isCertReviewStillNeeded(item)) {
         return false
       }
@@ -4556,6 +4564,9 @@ function getSubmissionReviewQueue() {
       return item.status === "待平台审核" && item.needsPlatformConnectReview
     }
     if (item.status !== "待审核") {
+      return false
+    }
+    if (isListingReportSubmission(item)) {
       return false
     }
     if (listingSubmissionIds[item.id]) {
@@ -4647,8 +4658,14 @@ function getAdminReviewQueue(tab) {
       if (item.submission && isProxyConnectReviewSubmission(item.submission)) {
         return false
       }
+      if (item.submission && isListingReportSubmission(item.submission)) {
+        return false
+      }
       return true
     })
+  }
+  if (tab === "report") {
+    return getListingReportReviewQueue()
   }
   if (tab === "all") {
     return getListingReviewQueue().concat(getSubmissionReviewQueue()).sort(function(a, b) {
@@ -4679,13 +4696,15 @@ function getAdminHubStats() {
       pendingBusiness += 1
     }
   })
+  var pendingReports = getListingReportReviewQueue().length
   var pendingListings = getListingReviewQueue().length
-  var pendingTotal = getAdminReviewQueue("all").length
+  var pendingTotal = getAdminReviewQueue("all").length + pendingReports
   return {
     pendingListings: pendingListings,
     pendingCertify: pendingCertify,
     pendingBusiness: pendingBusiness,
     pendingProxyConnect: pendingProxyConnect,
+    pendingReports: pendingReports,
     pendingSubmissions: submissions.length,
     pendingTotal: pendingTotal
   }
@@ -5551,13 +5570,17 @@ function getAdminReviewDetail(reviewType, id) {
       fileType: item.fileType || "file"
     }
   })
+  var isListingReport = isListingReportSubmission(record)
+  var reportedListing = isListingReport && record.reportListingId ? getItem(record.reportListingId) : null
   return {
     reviewType: "submission",
     id: record.id,
     submissionId: record.id,
     listingId: record.listingId || "",
-    typeName: isProxyConnectReview ? "代发对接审核" : (typeNames[record.type] || "商机申请"),
-    statusText: record.status || "待审核",
+    typeName: isListingReport
+      ? "商机举报"
+      : (isProxyConnectReview ? "代发对接审核" : (typeNames[record.type] || "商机申请")),
+    statusText: isListingReport ? getListingReportDisplayStatus(record) : (record.status || "待审核"),
     title: record.title || record.targetTitle || typeNames[record.type] || "待审核申请",
     attachments: attachments,
     listingType: record.listingType || record.type,
@@ -5568,12 +5591,26 @@ function getAdminReviewDetail(reviewType, id) {
     role: record.role,
     region: record.region,
     createdAt: record.createdAt,
-    showApplicantRegionRole: !isCardCertReviewSubmission(record),
+    showApplicantRegionRole: !isCardCertReviewSubmission(record) && !isListingReport,
     certLevel: record.certLevel || "",
     certImages: certImages,
     connectParties: connectParties,
     isConnectReview: record.type === "connect",
     isProxyConnectReview: isProxyConnectReview,
+    isListingReport: isListingReport,
+    reportListingId: record.reportListingId || "",
+    reportReason: record.reportReason || "",
+    reportedListing: reportedListing
+      ? {
+        id: reportedListing.id,
+        title: reportedListing.title,
+        region: reportedListing.region,
+        type: reportedListing.type,
+        poolLabel: reportedListing.pool === "demand" || (reportedListing.id && reportedListing.id.indexOf("UDEM-") === 0) ? "需求" : "资源",
+        verification: reportedListing.verification || "",
+        closed: isListingClosed(reportedListing)
+      }
+      : null,
     proxyInfo: proxyInfo,
     fields: buildAdminReviewFields(record, linkedListing)
   }
@@ -6003,6 +6040,108 @@ function rejectSubmissionReview(submissionId, reason) {
     }
   }
   return result
+}
+
+function closeReportedListingLocal(listingId, reason) {
+  if (!listingId) {
+    return Promise.resolve(false)
+  }
+  var listing = getItem(listingId)
+  if (!listing || isListingClosed(listing)) {
+    return Promise.resolve(false)
+  }
+  updatePublishedListing(listingId, {
+    status: "closed",
+    verification: "已关闭"
+  })
+  if (listing.submissionId) {
+    appendSubmissionTimeline(
+      listing.submissionId,
+      "已关闭",
+      reason || "因用户举报成立，平台已下架该商机。",
+      {}
+    )
+  }
+  return closeUnfinishedConnectsForListing(listingId).then(function() {
+    return true
+  })
+}
+
+function approveListingReportReview(submissionId, reason) {
+  var submission = getSubmission(submissionId)
+  if (!submission || !isListingReportSubmission(submission)) {
+    return Promise.reject(new Error("举报记录不存在"))
+  }
+  if (submission.status !== "待审核") {
+    return Promise.reject(new Error("该举报已处理"))
+  }
+  var listingId = submission.reportListingId || ""
+  var hint = reason || "举报成立，被举报商机已下架。"
+  if (isCloudEnabled()) {
+    if (!isAdminLoggedIn()) {
+      return Promise.reject(new Error("无运营权限"))
+    }
+    return cloudStore.adminReviewRemote(Object.assign({
+      reviewType: "submission",
+      action: "approve",
+      id: submissionId,
+      reason: hint,
+      reportReview: true
+    }, getAdminAuthPayload())).then(function() {
+      if (listingId) {
+        updatePublishedListing(listingId, {
+          status: "closed",
+          verification: "已关闭"
+        })
+      }
+      return getSubmission(submissionId)
+    })
+  }
+  return closeReportedListingLocal(listingId, hint).then(function() {
+    return appendSubmissionTimeline(submissionId, "已关闭", hint, {
+      reviewResult: "成立"
+    })
+  })
+}
+
+function rejectListingReportReview(submissionId, reason) {
+  var submission = getSubmission(submissionId)
+  if (!submission || !isListingReportSubmission(submission)) {
+    return Promise.reject(new Error("举报记录不存在"))
+  }
+  if (submission.status !== "待审核") {
+    return Promise.reject(new Error("该举报已处理"))
+  }
+  var hint = reason || "经核查未发现违规，举报驳回。"
+  if (isCloudEnabled()) {
+    if (!isAdminLoggedIn()) {
+      return Promise.reject(new Error("无运营权限"))
+    }
+    return cloudStore.adminReviewRemote(Object.assign({
+      reviewType: "submission",
+      action: "reject",
+      id: submissionId,
+      reason: hint,
+      reportReview: true
+    }, getAdminAuthPayload())).then(function() {
+      return getSubmission(submissionId)
+    })
+  }
+  return appendSubmissionTimeline(submissionId, "已关闭", hint, {
+    reviewResult: "驳回"
+  })
+}
+
+function refreshStaffListingReportsFromCloud() {
+  if (!isCloudEnabled() || !isAdminLoggedIn()) {
+    return Promise.resolve({ ok: true, local: true })
+  }
+  return cloudStore.listStaffListingReportsRemote({ scope: "history" }).then(function(result) {
+    if (result && result.data && result.data.items) {
+      wx.setStorageSync(adminListingReportsHistoryKey, result.data.items)
+    }
+    return result
+  })
 }
 
 function getConnectConfirmPrecheck(submissionId) {
@@ -8123,6 +8262,156 @@ var listingReportReasons = [
   "联系方式无效",
   "其他违规"
 ]
+
+function isListingReportSubmission(submission) {
+  return !!(submission && submission.isListingReport)
+}
+
+function getListingReportDisplayStatus(item) {
+  if (!item) {
+    return ""
+  }
+  if (item.status === "待审核") {
+    return "待处理"
+  }
+  if (item.reviewResult === "成立") {
+    return "举报成立"
+  }
+  if (item.reviewResult === "驳回") {
+    return "举报驳回"
+  }
+  if (item.status === "已关闭") {
+    return "已处理"
+  }
+  return item.status || "待处理"
+}
+
+function getListingReportStatusBadgeClass(displayStatus) {
+  if (displayStatus === "举报成立") {
+    return "status-approved"
+  }
+  if (displayStatus === "举报驳回" || displayStatus === "已处理") {
+    return "status-closed"
+  }
+  return "status-pending"
+}
+
+function mapListingReportReviewItem(submission) {
+  if (!submission) {
+    return null
+  }
+  var listingId = submission.reportListingId || ""
+  var listing = listingId ? getItem(listingId) : null
+  return {
+    id: submission.id,
+    reviewType: "submission",
+    pool: listing && (listing.pool === "demand" || listing.id.indexOf("UDEM-") === 0) ? "demand" : "resource",
+    typeName: "商机举报",
+    title: submission.title || ("商机举报：" + (listing ? listing.title : listingId)),
+    listingType: listing ? listing.type : "",
+    company: submission.company,
+    contact: submission.contact,
+    phone: submission.phone,
+    region: submission.region,
+    summary: submission.description || "",
+    createdAt: submission.createdAt,
+    submissionId: submission.id,
+    listing: listing,
+    submission: submission,
+    reportListingId: listingId,
+    reportReason: submission.reportReason || ""
+  }
+}
+
+function getListingReportReviewQueue() {
+  var queue = []
+  if (isCloudEnabled() && isAdminLoggedIn()) {
+    queue = (wx.getStorageSync(adminPendingSubmissionsKey) || []).filter(function(item) {
+      return isListingReportSubmission(item) && item.status === "待审核"
+    })
+  } else {
+    var sourceList = isAdminLoggedIn() ? getAllSubmissionsRaw() : getSubmissions()
+    queue = sourceList.filter(function(item) {
+      return isListingReportSubmission(item) && item.status === "待审核"
+    })
+  }
+  return queue.map(mapListingReportReviewItem).filter(Boolean).sort(function(a, b) {
+    return (b.createdAt || "").localeCompare(a.createdAt || "")
+  })
+}
+
+function getStaffListingReportHistory() {
+  var items = []
+  if (isCloudEnabled() && isAdminLoggedIn()) {
+    items = wx.getStorageSync(adminListingReportsHistoryKey) || []
+  } else if (isAdminLoggedIn()) {
+    items = getAllSubmissionsRaw().filter(function(item) {
+      return isListingReportSubmission(item) && item.status !== "待审核"
+    })
+  }
+  return items.slice().sort(function(a, b) {
+    return (b.createdAt || "").localeCompare(a.createdAt || "")
+  })
+}
+
+function getUserListingReports() {
+  if (!isUserRegistered()) {
+    return []
+  }
+  var profile = getUserProfile()
+  var phone = profile ? profile.phone : ""
+  if (!phone) {
+    return []
+  }
+  return getSubmissions().filter(function(item) {
+    return isListingReportSubmission(item)
+      && (item.phone === phone || item.ownerPhone === phone)
+  }).sort(function(a, b) {
+    return (b.createdAt || "").localeCompare(a.createdAt || "")
+  })
+}
+
+function getUserListingReportStats() {
+  var reports = getUserListingReports()
+  var pending = 0
+  reports.forEach(function(item) {
+    if (item.status === "待审核") {
+      pending += 1
+    }
+  })
+  return {
+    count: reports.length,
+    pending: pending,
+    summary: reports.length
+      ? (pending > 0 ? pending + " 条待平台处理 · 共 " + reports.length + " 条" : "共 " + reports.length + " 条举报记录")
+      : "暂无举报记录"
+  }
+}
+
+function enrichListingReportForList(item) {
+  var listingId = item.reportListingId || ""
+  var listing = listingId ? getItem(listingId) : null
+  var displayStatus = getListingReportDisplayStatus(item)
+  var timeline = item.statusTimeline || []
+  var processedAt = ""
+  if (timeline.length > 1) {
+    processedAt = timeline[timeline.length - 1].time || ""
+  }
+  return Object.assign({}, item, {
+    displayStatus: displayStatus,
+    statusBadgeClass: getListingReportStatusBadgeClass(displayStatus),
+    listingTitle: listing ? listing.title : (String(item.title || "").replace(/^商机举报：/, "") || listingId),
+    listingRegion: listing ? listing.region : "",
+    listingPoolLabel: listing && (listing.pool === "demand" || (listing.id && listing.id.indexOf("UDEM-") === 0)) ? "需求" : "资源",
+    reportReason: item.reportReason || "",
+    reporterPhone: maskPhone(item.phone || item.ownerPhone || ""),
+    reporterCompany: item.company || "",
+    relativeTime: formatRelativeTime(item.createdAt),
+    processedAt: processedAt,
+    isPending: item.status === "待审核",
+    summaryLine: [item.reportReason, listing ? listing.region : ""].filter(Boolean).join(" · ")
+  })
+}
 
 function getListingReportReasonOptions() {
   return listingReportReasons.slice()
@@ -12128,6 +12417,16 @@ module.exports = {
   getHomeIntentCategories,
   getListingVerificationView,
   getListingReportReasonOptions,
+  isListingReportSubmission,
+  getListingReportDisplayStatus,
+  getListingReportReviewQueue,
+  getStaffListingReportHistory,
+  getUserListingReports,
+  getUserListingReportStats,
+  enrichListingReportForList,
+  approveListingReportReview,
+  rejectListingReportReview,
+  refreshStaffListingReportsFromCloud,
   submitListingReportAsync,
   getSubmissionRejectionResubmitGuide,
   buildRegisterUrl,

@@ -18,11 +18,12 @@ App({
 
     try {
       if (data.isCloudEnabled()) {
-        var syncPromise = !data.isUserRegistered()
-          ? data.refreshAllPublicListings()
+        var isGuestLaunch = !data.isUserRegistered()
+        var syncPromise = isGuestLaunch
+          ? data.refreshAllPublicListings({ silent: true })
           : data.validateDeviceSessionOnLaunch().then(function() {
             if (!data.isUserRegistered()) {
-              return data.refreshAllPublicListings()
+              return data.refreshAllPublicListings({ silent: true })
             }
             return data.isStaffUser()
               ? data.refreshStaffLaunchFromCloud()
@@ -33,6 +34,9 @@ App({
         }).catch(function(error) {
           data.updateMineTabBadge()
           console.warn("云端拉取失败", error)
+          if (isGuestLaunch) {
+            return
+          }
           var msg = error && error.message ? error.message : "拉取失败"
           if (data.isUserRegistered() && msg.indexOf("timeout") > -1) {
             return
