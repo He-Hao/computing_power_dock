@@ -1,0 +1,57 @@
+<view class="page admin-user-detail-page" wx:if="{{user}}">
+  <view class="card user-hero-card">
+    <view class="user-hero-phone copyable-text" bindlongpress="copyUserText" data-text="{{user.phone}}">{{user.phone}}</view>
+    <view class="user-hero-tags">
+      <text class="gov-tag muted" wx:if="{{user.staffRole}}">{{user.staffRoleText}}</text>
+      <text class="gov-tag danger" wx:elif="{{user.accountStatus === 'disabled'}}">已禁用</text>
+      <text class="gov-tag" wx:elif="{{user.certStatus === 'verified'}}">{{user.certLevel === 'license' ? '执照认证' : '名片认证'}}</text>
+      <text class="gov-tag muted" wx:elif="{{user.certStatus === 'pending'}}">认证审核中</text>
+      <text class="gov-tag muted" wx:else>未认证</text>
+    </view>
+    <view class="user-hero-subtitle">{{user.company || user.contact || '未填写企业/联系人'}}</view>
+  </view>
+
+  <view class="card">
+    <view class="section-title compact">账号资料</view>
+    <view class="gov-user-row" wx:for="{{detailRows}}" wx:key="label">
+      <text class="gov-user-label">{{item.label}}</text>
+      <text
+        class="gov-user-value copyable-text"
+        bindlongpress="copyUserText"
+        data-text="{{item.value}}"
+      >{{item.value}}</text>
+    </view>
+  </view>
+
+  <view class="card user-action-card">
+    <view class="section-title compact">账号操作</view>
+    <view class="gov-item-actions">
+      <view class="gov-btn ghost" bindtap="openAccountManage">治理中心</view>
+      <view
+        class="gov-btn danger {{actionLoading ? 'btn-busy' : ''}}"
+        wx:if="{{user.accountStatus !== 'disabled' && !user.staffRole}}"
+        bindtap="disableAccount"
+      >{{actionLoading === 'disable' ? '处理中...' : '禁用账号'}}</view>
+      <view
+        class="gov-btn primary {{actionLoading ? 'btn-busy' : ''}}"
+        wx:if="{{user.accountStatus === 'disabled'}}"
+        bindtap="enableAccount"
+      >{{actionLoading === 'enable' ? '处理中...' : '解除禁用'}}</view>
+    </view>
+    <view class="gov-tip muted" wx:if="{{user.staffRole}}">运营账号不可在此禁用</view>
+  </view>
+</view>
+
+<view class="page admin-user-detail-page" wx:elif="{{loading}}">
+  <view class="gov-empty card">
+    <view class="gov-empty-title">加载中…</view>
+    <view class="gov-empty-text">正在获取用户资料</view>
+  </view>
+</view>
+
+<view class="page admin-user-detail-page" wx:else>
+  <view class="gov-empty card">
+    <view class="gov-empty-title">未找到用户</view>
+    <view class="gov-empty-text">请确认手机号已注册</view>
+  </view>
+</view>

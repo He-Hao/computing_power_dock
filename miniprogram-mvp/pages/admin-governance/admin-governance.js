@@ -18,6 +18,19 @@ Page({
     accountActionLoading: ""
   },
 
+  onLoad(options) {
+    var tab = options.tab === "account" ? "account" : "listing"
+    var phone = String(options.phone || "").trim()
+    var patch = { activeTab: tab }
+    if (phone) {
+      patch.accountPhone = phone
+    }
+    this.setData(patch)
+    if (phone && tab === "account") {
+      this._pendingAccountLookup = true
+    }
+  },
+
   onShow() {
     const data = require("../../utils/data")
     const adminModule = require("../../utils/admin")
@@ -42,6 +55,10 @@ Page({
       return
     }
     adminModule.guardStaffWorkMode({ redirect: "back" })
+    if (this._pendingAccountLookup && this.data.accountPhone) {
+      this._pendingAccountLookup = false
+      this.lookupAccount()
+    }
   },
 
   onPullDownRefresh() {
@@ -159,8 +176,11 @@ Page({
     }
     this.setData({ accountLoading: true, accountSearched: true })
     return data.adminLookupUserAsync(phone).then(function(result) {
+      const adminUserView = require("../../utils/adminUserView")
       this.setData({
-        accountUser: result.ok ? result.user : null,
+        accountUser: result.ok && result.user
+          ? adminUserView.enrichAdminUserListItem(result.user)
+          : null,
         accountLoading: false
       })
       if (!result.ok) {
@@ -236,6 +256,15 @@ Page({
           this.setData({ accountActionLoading: "" })
         }.bind(this))
       }.bind(this)
+    })
+  },
+
+  copyAccountText(event) {
+    const copyText = require("../../utils/copyText")
+    var text = event.currentTarget.dataset.text || ""
+    copyText.copyTextToClipboard(text, {
+      emptyTip: "无内容可复制",
+      successTip: "已复制"
     })
   }
 })

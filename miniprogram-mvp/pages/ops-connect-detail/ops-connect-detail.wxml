@@ -29,7 +29,7 @@
       >{{party.title}}</view>
       <view class="party-title" wx:else>{{party.title}}</view>
       <view class="party-meta" wx:if="{{party.type}}">{{party.type}} · {{party.region}}</view>
-      <view class="party-meta">{{party.company}} · {{party.contact}} · {{party.phone}}</view>
+      <view class="party-meta copyable-text" bindlongpress="copyPartyText" data-text="{{party.company}} · {{party.contact}} · {{party.phone}}">{{party.company}} · {{party.contact}} · {{party.phone}}</view>
       <view class="party-summary" wx:if="{{party.summary}}">{{party.summary}}</view>
       <view
         class="party-listing-action"

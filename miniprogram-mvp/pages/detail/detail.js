@@ -18,10 +18,13 @@ Page({
   _detailCloudRefreshing: false,
   _lastDetailCloudRefresh: 0,
   _matchSearchDefaultApplied: false,
+  _detailLoadSettled: false,
+  _detailLoadFailed: false,
 
   data: {
     item: null,
     itemId: "",
+    detailLoading: false,
     isResource: false,
     blocked: false,
     isGuest: false,
@@ -100,32 +103,49 @@ Page({
     reportLoading: false
   },
 
+  resolvePageOptions() {
+    const share = require("../../utils/share")
+    this.options = share.mergePageLaunchOptions(this.options || {})
+    return this.options
+  },
+
   onLoad(options) {
     this.options = options || {}
     this._matchSearchDefaultApplied = false
+    this._detailLoadSettled = false
+    this._detailLoadFailed = false
+    this.resolvePageOptions()
     this.setData({
-      matchPickerExpanded: options.matchExpanded === "1",
+      matchPickerExpanded: this.options.matchExpanded === "1",
       matchPickerView: "smart",
       matchManualKeyword: "",
       selectedMatchIds: [],
       selectedMatchCount: 0
     })
     const data = require("../../utils/data")
-    if (options.id && (options.from === "ops-proxy" || options.from === "staff-proxy")) {
+    const share = require("../../utils/share")
+    var pageOptions = this.options
+    if (pageOptions.id && (pageOptions.from === "ops-proxy" || pageOptions.from === "staff-proxy")) {
       data.clearShareIntent()
     }
-    if (options.id && options.from === "share") {
+    if (pageOptions.id && pageOptions.from === "share") {
       data.saveShareIntent({
-        listingId: options.id,
+        listingId: pageOptions.id,
         action: "view",
-        isResource: data.isResource(options.id),
+        isResource: data.isResource(pageOptions.id),
         source: "share"
       })
     }
     this.loadDetail()
+    if (data.isCloudEnabled()
+      && pageOptions.id
+      && (pageOptions.from === "share" || share.isGuestCloudLaunch())) {
+      this.refreshDetailFromCloud(false)
+    }
   },
 
   onShow() {
+    this.resolvePageOptions()
     const data = require("../../utils/data")
     this.loadDetail()
     if (!data.isCloudEnabled()) {
@@ -145,6 +165,8 @@ Page({
 
   refreshDetailFromCloud(force) {
     const data = require("../../utils/data")
+    const share = require("../../utils/share")
+    var options = this.resolvePageOptions()
     this.loadDetail()
     if (!data.isCloudEnabled()) {
       return Promise.resolve()
@@ -153,23 +175,32 @@ Page({
       return Promise.resolve()
     }
     this._detailCloudRefreshing = true
-    var options = this.options || {}
+    var fromShare = data.isShareDetailLanding(options.id, options) || share.isGuestCloudLaunch()
     var rawListing = data.resolveListingForDetail(options.id, {
       from: options.from,
       connectId: options.connectId || ""
     })
     var isConnectPreview = options.from === "connect-preview" && !!(options.connectId && options.id)
-    var refreshPromise = (options.from === "ops-connect" && data.isStaffWorkMode())
-      ? data.refreshStaffGlobalConnectsFromCloud()
-      : (isConnectPreview && !rawListing
-        ? data.refreshFromCloudForMine()
-        : ((data.isStaffWorkMode() && rawListing && rawListing.publishedByStaff)
-          ? data.refreshFromCloudForMine()
-          : data.refreshPoolPagesFromCloud()))
+    var refreshPromise
+    if (fromShare && options.id && (!rawListing || force)) {
+      refreshPromise = data.fetchPublicListingById(options.id, { silent: true })
+    } else if (options.from === "ops-connect" && data.isStaffWorkMode()) {
+      refreshPromise = data.refreshStaffGlobalConnectsFromCloud()
+    } else if (isConnectPreview && !rawListing) {
+      refreshPromise = data.refreshFromCloudForMine()
+    } else if (data.isStaffWorkMode() && rawListing && rawListing.publishedByStaff) {
+      refreshPromise = data.refreshFromCloudForMine()
+    } else {
+      refreshPromise = data.refreshPoolPagesFromCloud()
+    }
     return refreshPromise.then(function() {
+      this._detailLoadSettled = true
+      this._detailLoadFailed = false
       this._lastDetailCloudRefresh = Date.now()
       this.loadDetail()
     }.bind(this)).catch(function() {
+      this._detailLoadSettled = true
+      this._detailLoadFailed = true
       this.loadDetail()
     }.bind(this)).finally(function() {
       this._detailCloudRefreshing = false
@@ -400,13 +431,14 @@ Page({
   },
 
   loadDetail() {
-    var options = this.options || {}
+    var options = this.resolvePageOptions()
     try {
       const data = require("../../utils/data")
+      const share = require("../../utils/share")
       const isAdmin = data.isAdminLoggedIn()
       const isGuest = !data.isUserRegistered() && !isAdmin
       const isResource = data.isResource(options.id)
-      const fromShare = data.isShareDetailLanding(options.id, options)
+      const fromShare = data.isShareDetailLanding(options.id, options) || share.isGuestCloudLaunch()
       const isStaffOversight = options.from === "ops-connect" && data.isStaffUser() && data.isStaffWorkMode()
       var connectId = options.connectId || ""
       var connectFrom = options.connectFrom || ""
@@ -598,7 +630,6 @@ Page({
         ? data.getListingLinkedConnectStats(options.id)
         : { count: 0, pending: 0, connects: [] }
       var showBottomBar = perm.showBottomBar
-      const share = require("../../utils/share")
       const permissions = require("../../utils/permissions")
       var canShareConnectInvite = permissions.canShareConnectInviteOnDetail({
         hasListing: !!rawItem,
@@ -619,9 +650,16 @@ Page({
             ? "对接预览"
             : (isStaffOversight ? (isResource ? "资源预览" : "需求预览") : (isResource ? "资源详情" : "需求详情")))
       })
+      var guestLanding = fromShare || share.isGuestCloudLaunch()
+      var detailLoading = !rawItem
+        && options.id
+        && guestLanding
+        && data.isCloudEnabled()
+        && !this._detailLoadSettled
       this.setData({
         item: item,
         itemId: options.id || "",
+        detailLoading: detailLoading,
         isResource: isResource,
         blocked: false,
         isGuest: isGuest,
@@ -1274,10 +1312,20 @@ Page({
 
   onShareTimeline() {
     const share = require("../../utils/share")
-    if (!this.data.item || !this.data.itemId) {
+    const data = require("../../utils/data")
+    var options = this.resolvePageOptions()
+    var id = this.data.itemId || options.id || ""
+    var item = this.data.item
+    if (!item && id) {
+      item = data.resolveListingForDetail(id, {
+        from: options.from,
+        connectId: options.connectId || ""
+      })
+    }
+    if (!item || !id) {
       return share.buildHomeShareTimeline()
     }
-    return share.buildListingShareTimeline(this.data.item, this.data.itemId)
+    return share.buildListingShareTimeline(item, id)
   },
 
   toggleFavorite() {

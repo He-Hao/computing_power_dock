@@ -194,6 +194,14 @@ function isListingClosed(item) {
   return !!(item && (item.status === "closed" || item.verification === "已关闭"))
 }
 
+function buildClosedListingPatch(extra) {
+  return Object.assign({
+    status: "closed",
+    verification: "已关闭",
+    publicDisplay: false
+  }, extra || {})
+}
+
 function isListingPendingReview(item) {
   return !!(item && item.verification === "待审核")
 }
@@ -660,6 +668,18 @@ function mergeSubmissionIntoMap(map, item) {
   }
 }
 
+function mergeStaffProxyListingRows(baseRows, extraRows) {
+  var map = {}
+  ;(baseRows || []).concat(extraRows || []).forEach(function(item) {
+    if (item && item.id) {
+      map[item.id] = item
+    }
+  })
+  return Object.keys(map).map(function(key) {
+    return map[key]
+  })
+}
+
 function sortSubmissionsByRecent(list) {
   return (list || []).slice().sort(function(a, b) {
     var ta = a.updatedAt || a.createdAt || ""
@@ -778,6 +798,8 @@ const LOGIN_LOCKOUT_MINUTES = 15
 const DAILY_CONNECT_SUBMIT_LIMIT = 30
 const LISTINGS_FETCH_BATCH = 100
 const LISTINGS_FETCH_MAX = 1000
+const ADMIN_QUERY_FETCH_BATCH = 100
+const ADMIN_QUERY_FETCH_MAX = 5000
 
 /** 正式上线须保持 false；仅开发/冷启动时在云函数环境变量 DEMO_SEED_TOOLS_ENABLED=true 临时开启 */
 const DEMO_SEED_TOOLS_ENABLED = process.env.DEMO_SEED_TOOLS_ENABLED === "true"
@@ -827,6 +849,47 @@ async function upsertUserByPhone(phone, openid, patch) {
 async function getListingById(id) {
   var res = await db.collection(COL_LISTINGS).where({ id: id }).limit(1).get()
   return res.data && res.data[0] ? res.data[0] : null
+}
+
+async function fetchAllCollectionDocs(collectionName, options) {
+  options = options || {}
+  var batchSize = Math.min(100, Math.max(20, options.batchSize || ADMIN_QUERY_FETCH_BATCH))
+  var maxDocs = Math.max(batchSize, options.maxDocs || ADMIN_QUERY_FETCH_MAX)
+  var where = options.where
+  var field = options.field
+  var all = []
+  var skip = 0
+  while (skip < maxDocs) {
+    var query = db.collection(collectionName)
+    if (where) {
+      query = query.where(where)
+    }
+    if (field) {
+      query = query.field(field)
+    }
+    var res = await query.skip(skip).limit(batchSize).get()
+    var batch = res.data || []
+    if (!batch.length) {
+      break
+    }
+    all = all.concat(batch)
+    skip += batch.length
+    if (batch.length < batchSize) {
+      break
+    }
+  }
+  return all
+}
+
+function adminListingStatusMatched(item, status) {
+  var closed = isListingClosed(item)
+  if (status === "published") {
+    return !closed && !isListingPendingReview(item)
+  }
+  if (status === "closed") {
+    return closed
+  }
+  return true
 }
 
 async function getListingsByIds(ids) {
@@ -1452,7 +1515,9 @@ async function syncData(openid, payload) {
     if (userPhone) {
       baseQueries.push(
         safeQuery(syncConnectQuery({ type: "connect", recipientProxyStaffPhone: userPhone })),
-        safeQuery(syncConnectQuery({ type: "connect", applicantProxyStaffPhone: userPhone }))
+        safeQuery(syncConnectQuery({ type: "connect", applicantProxyStaffPhone: userPhone })),
+        safeQuery(syncConnectQuery({ publishedByStaff: true, proxyStaffPhone: userPhone })),
+        safeQuery(db.collection(COL_LISTINGS).where({ proxyStaffPhone: userPhone }).limit(100).get())
       )
     }
   }
@@ -1519,6 +1584,15 @@ async function syncData(openid, payload) {
     if (userPhone && queryResults[queryIndex]) {
       var applicantProxyPhoneRes = queryResults[queryIndex++]
       applicantProxyConnect = applicantProxyConnect.concat(applicantProxyPhoneRes.data || [])
+    }
+    if (userPhone && queryResults[queryIndex]) {
+      proxyStaffPublish = proxyStaffPublish.concat(queryResults[queryIndex++].data || [])
+    }
+    if (userPhone && queryResults[queryIndex]) {
+      staffProxyListings = mergeStaffProxyListingRows(
+        staffProxyListings,
+        queryResults[queryIndex++].data || []
+      )
     }
   }
 
@@ -2091,6 +2165,35 @@ async function collectVisibleListings(pool, filters, openid, targetCount) {
   }
 }
 
+async function getPublicListing(payload, openid) {
+  payload = payload || {}
+  var listingId = String(payload.listingId || payload.id || "").trim()
+  if (!listingId) {
+    return { ok: false, message: "缺少商机编号" }
+  }
+  var listing = await getListingById(listingId)
+  if (!listing) {
+    return { ok: false, message: "商机不存在" }
+  }
+  if (listing.verification === "待审核") {
+    return { ok: false, message: "商机未发布" }
+  }
+  if (listing.publicDisplay === false) {
+    return { ok: false, message: "商机已隐藏" }
+  }
+  var viewer = openid ? await resolveSessionUser(openid, {}) : null
+  if (await shouldExcludeListingForViewer(listing, viewer)) {
+    return { ok: false, message: "商机不存在" }
+  }
+  var pool = isResourceId(listingId) ? "resource" : "demand"
+  return {
+    ok: true,
+    data: {
+      listing: normalizeListingForResponse(listing, pool)
+    }
+  }
+}
+
 async function listListings(payload, openid) {
   payload = payload || {}
   var pool = payload.pool === "demand" ? "demand" : "resource"
@@ -2181,9 +2284,7 @@ async function applyListingTakeDownInternal(listing, reason, options) {
     return { ok: false, message: "该商机已下架" }
   }
   var takeDownReason = String(reason || "").trim() || "平台管理员下架"
-  var listingNext = Object.assign({}, listing, {
-    status: "closed",
-    verification: "已关闭",
+  var listingNext = Object.assign({}, listing, buildClosedListingPatch(), {
     adminTakenDown: true,
     adminTakeDownReason: takeDownReason,
     adminTakeDownAt: formatDate(new Date()),
@@ -2204,6 +2305,7 @@ async function applyListingTakeDownInternal(listing, reason, options) {
         status: "已关闭",
         statusTimeline: statusTimeline,
         adminTakenDown: true,
+        publicDisplay: false,
         reviewResult: sub.reviewResult || "平台下架",
         updatedAt: formatDate(new Date())
       })
@@ -2338,11 +2440,14 @@ async function adminSearchPublishedListings(openid, payload) {
   if (!admin) {
     return { ok: false, message: "仅平台管理员可查询公开展示商机" }
   }
+  payload = payload || {}
   var pool = payload.pool === "demand" ? "demand" : (payload.pool === "resource" ? "resource" : "all")
   var keyword = String(payload.keyword || "").trim().toLowerCase()
-  var includeClosed = payload.includeClosed === true
-  var res = await db.collection(COL_LISTINGS).limit(300).get()
-  var items = (res.data || []).filter(function(item) {
+  var status = payload.status || (payload.includeClosed ? "all" : "published")
+  var page = Math.max(1, parseInt(payload.page, 10) || 1)
+  var pageSize = Math.min(50, Math.max(10, parseInt(payload.pageSize, 10) || 20))
+  var allListings = await fetchAllCollectionDocs(COL_LISTINGS)
+  var items = allListings.filter(function(item) {
     if (!item || !item.id) {
       return false
     }
@@ -2352,7 +2457,7 @@ async function adminSearchPublishedListings(openid, payload) {
     if (pool === "demand" && item.pool !== "demand" && !isDemandId(item.id)) {
       return false
     }
-    if (!includeClosed && isListingClosed(item)) {
+    if (!adminListingStatusMatched(item, status)) {
       return false
     }
     if (!keyword) {
@@ -2369,6 +2474,8 @@ async function adminSearchPublishedListings(openid, payload) {
     ].join(" ").toLowerCase()
     return haystack.indexOf(keyword) > -1
   }).map(function(item) {
+    var closed = isListingClosed(item)
+    var pending = isListingPendingReview(item)
     return {
       id: item.id,
       pool: item.pool || (isResourceId(item.id) ? "resource" : "demand"),
@@ -2379,17 +2486,25 @@ async function adminSearchPublishedListings(openid, payload) {
       publishedAt: item.publishedAt || item.createdAt || "",
       ownerPhone: item.ownerPhone || item.actualOwnerPhone || "",
       publishedByStaff: !!item.publishedByStaff,
-      adminTakenDown: !!item.adminTakenDown
+      adminTakenDown: !!item.adminTakenDown,
+      statusKey: closed ? "closed" : (pending ? "pending" : "published"),
+      statusLabel: closed ? "已关闭" : (pending ? "待审核" : "已发布")
     }
   })
   items.sort(function(a, b) {
     return (b.publishedAt || "").localeCompare(a.publishedAt || "")
   })
+  var total = items.length
+  var start = (page - 1) * pageSize
+  var pageItems = items.slice(start, start + pageSize)
   return {
     ok: true,
     data: {
-      items: items.slice(0, 50),
-      total: items.length
+      items: pageItems,
+      total: total,
+      page: page,
+      pageSize: pageSize,
+      hasMore: start + pageSize < total
     }
   }
 }
@@ -2407,24 +2522,183 @@ async function adminLookupUser(openid, payload) {
   if (!user) {
     return { ok: false, message: "未找到该手机号对应的账号" }
   }
+  var rows = await attachAdminUserActivityStats([mapAdminUserListRow(user)])
   return {
     ok: true,
     data: {
-      user: {
-        phone: user.phone || phone,
-        contact: user.contact || "",
-        company: user.company || "",
-        role: user.role || "",
-        region: user.region || "",
-        accountStatus: user.accountStatus || "active",
-        accountDisabledAt: user.accountDisabledAt || "",
-        accountDisabledReason: user.accountDisabledReason || "",
-        certStatus: user.certStatus || "",
-        certLevel: user.certLevel || "",
-        staffRole: user.staffRole || "",
-        registeredAt: user.registeredAt || "",
-        lastLoginAt: user.lastLoginAt || ""
-      }
+      user: rows[0] || mapAdminUserListRow(user)
+    }
+  }
+}
+
+function mapAdminUserListRow(user) {
+  if (!user) {
+    return null
+  }
+  var phone = normalizePhone(user.phone)
+  if (!phone) {
+    return null
+  }
+  return {
+    phone: phone,
+    contact: user.contact || "",
+    company: user.company || "",
+    role: user.role || "",
+    region: user.region || "",
+    creditCode: user.creditCode || "",
+    email: user.email || "",
+    website: user.website || "",
+    description: user.description || "",
+    accountStatus: user.accountStatus || "active",
+    accountDisabledAt: user.accountDisabledAt || "",
+    accountDisabledReason: user.accountDisabledReason || "",
+    certStatus: user.certStatus || "",
+    certLevel: user.certLevel || "",
+    certSubmittedAt: user.certSubmittedAt || "",
+    certVerifiedAt: user.certVerifiedAt || "",
+    staffRole: user.staffRole || "",
+    phoneVerified: user.phoneVerified !== false,
+    onboardingCompleted: !!user.onboardingCompleted,
+    userIntent: user.userIntent || "",
+    registeredAt: user.registeredAt || "",
+    lastLoginAt: user.lastLoginAt || "",
+    updatedAt: user.updatedAt || "",
+    resourceCount: 0,
+    demandCount: 0,
+    connectCount: 0,
+    submissionCount: 0
+  }
+}
+
+async function attachAdminUserActivityStats(users) {
+  if (!users || !users.length) {
+    return users || []
+  }
+  var phones = users.map(function(user) {
+    return user.phone
+  }).filter(Boolean)
+  if (!phones.length) {
+    return users
+  }
+  var statsMap = {}
+  phones.forEach(function(phone) {
+    statsMap[phone] = {
+      resourceCount: 0,
+      demandCount: 0,
+      connectCount: 0,
+      submissionCount: 0
+    }
+  })
+  var listingRes = await db.collection(COL_LISTINGS).where({
+    ownerPhone: _.in(phones)
+  }).field({
+    ownerPhone: true,
+    pool: true,
+    id: true
+  }).limit(1000).get()
+  ;(listingRes.data || []).forEach(function(item) {
+    var phone = normalizePhone(item.ownerPhone)
+    if (!statsMap[phone]) {
+      return
+    }
+    if (item.pool === "demand" || isDemandId(item.id)) {
+      statsMap[phone].demandCount += 1
+    } else {
+      statsMap[phone].resourceCount += 1
+    }
+  })
+  var connectRes = await db.collection(COL_SUBMISSIONS).where({
+    type: "connect",
+    ownerPhone: _.in(phones)
+  }).field({
+    ownerPhone: true
+  }).limit(1000).get()
+  ;(connectRes.data || []).forEach(function(item) {
+    var phone = normalizePhone(item.ownerPhone)
+    if (statsMap[phone]) {
+      statsMap[phone].connectCount += 1
+    }
+  })
+  var submissionRes = await db.collection(COL_SUBMISSIONS).where({
+    ownerPhone: _.in(phones),
+    type: _.neq("connect")
+  }).field({
+    ownerPhone: true
+  }).limit(1000).get()
+  ;(submissionRes.data || []).forEach(function(item) {
+    var phone = normalizePhone(item.ownerPhone)
+    if (statsMap[phone]) {
+      statsMap[phone].submissionCount += 1
+    }
+  })
+  return users.map(function(user) {
+    var stats = statsMap[user.phone] || {}
+    return Object.assign({}, user, stats)
+  })
+}
+
+async function adminListUsers(openid, payload) {
+  var admin = await verifyPlatformAdminAccess(openid)
+  if (!admin) {
+    return { ok: false, message: "仅平台管理员可查看用户列表" }
+  }
+  payload = payload || {}
+  var keyword = String(payload.keyword || "").trim().toLowerCase()
+  var filter = payload.filter || "all"
+  var page = Math.max(1, parseInt(payload.page, 10) || 1)
+  var pageSize = Math.min(50, Math.max(10, parseInt(payload.pageSize, 10) || 20))
+  var res = await db.collection(COL_USERS).where({
+    phone: _.exists(true)
+  }).limit(500).get()
+  var users = (res.data || []).map(mapAdminUserListRow).filter(Boolean)
+  if (filter === "normal") {
+    users = users.filter(function(user) {
+      return !user.staffRole && user.accountStatus !== "disabled"
+    })
+  } else if (filter === "staff") {
+    users = users.filter(function(user) {
+      return !!user.staffRole
+    })
+  } else if (filter === "disabled") {
+    users = users.filter(function(user) {
+      return user.accountStatus === "disabled"
+    })
+  }
+  if (keyword) {
+    users = users.filter(function(user) {
+      var haystack = [
+        user.phone,
+        user.contact,
+        user.company,
+        user.role,
+        user.region,
+        user.creditCode,
+        user.email,
+        user.website,
+        user.description,
+        user.staffRole,
+        user.certLevel,
+        user.certStatus,
+        user.userIntent
+      ].join(" ").toLowerCase()
+      return haystack.indexOf(keyword) > -1
+    })
+  }
+  users.sort(function(a, b) {
+    return (b.registeredAt || b.lastLoginAt || "").localeCompare(a.registeredAt || a.lastLoginAt || "")
+  })
+  var total = users.length
+  var start = (page - 1) * pageSize
+  var pageItems = users.slice(start, start + pageSize)
+  pageItems = await attachAdminUserActivityStats(pageItems)
+  return {
+    ok: true,
+    data: {
+      items: pageItems,
+      total: total,
+      page: page,
+      pageSize: pageSize,
+      hasMore: start + pageSize < total
     }
   }
 }
@@ -2840,7 +3114,7 @@ async function listStaffGlobalConnects(openid, payload) {
 async function staffWorkbenchSync(openid, payload) {
   payload = payload || {}
   var pendingLimit = 80
-  var staffLimit = 40
+  var staffLimit = 80
 
   function safeQuery(promise) {
     return promise.catch(function(error) {
@@ -2878,7 +3152,9 @@ async function staffWorkbenchSync(openid, payload) {
   if (userPhone) {
     phoneResults = await Promise.all([
       safeQuery(db.collection(COL_SUBMISSIONS).where({ type: "connect", recipientProxyStaffPhone: userPhone }).limit(staffLimit).get()),
-      safeQuery(db.collection(COL_SUBMISSIONS).where({ type: "connect", applicantProxyStaffPhone: userPhone }).limit(staffLimit).get())
+      safeQuery(db.collection(COL_SUBMISSIONS).where({ type: "connect", applicantProxyStaffPhone: userPhone }).limit(staffLimit).get()),
+      safeQuery(db.collection(COL_SUBMISSIONS).where({ publishedByStaff: true, proxyStaffPhone: userPhone }).limit(staffLimit).get()),
+      safeQuery(db.collection(COL_LISTINGS).where({ proxyStaffPhone: userPhone }).limit(staffLimit).get())
     ])
   }
 
@@ -2902,7 +3178,7 @@ async function staffWorkbenchSync(openid, payload) {
   })
 
   var submissionMap = {}
-  var staffProxyListings = results[7].data || []
+  var staffProxyListings = mergeStaffProxyListingRows(results[7].data || [])
   for (var i = 3; i < results.length; i += 1) {
     if (i === 7) {
       continue
@@ -2911,8 +3187,12 @@ async function staffWorkbenchSync(openid, payload) {
       mergeSubmissionIntoMap(submissionMap, item)
     })
   }
-  phoneResults.forEach(function(res) {
+  phoneResults.forEach(function(res, phoneIndex) {
     ;(res.data || []).forEach(function(item) {
+      if (phoneIndex >= 2) {
+        staffProxyListings = mergeStaffProxyListingRows(staffProxyListings, [item])
+        return
+      }
       mergeSubmissionIntoMap(submissionMap, item)
     })
   })
@@ -4155,6 +4435,24 @@ async function patchSubmission(openid, payload) {
     }
   }
 
+  if (patch.listingPatch && submission.listingId
+    && (patch.listingPatch.status === "closed" || patch.listingPatch.verification === "已关闭")) {
+    if (patch.listingPatch.publicDisplay === undefined) {
+      patch.listingPatch.publicDisplay = false
+    }
+    if (patch.publicDisplay === undefined) {
+      patch.publicDisplay = false
+    }
+  } else if (patch.status === "已关闭" && submission.listingId
+    && submission.type !== "connect" && submission.type !== "certify") {
+    if (patch.publicDisplay === undefined) {
+      patch.publicDisplay = false
+    }
+    if (!patch.listingPatch) {
+      patch.listingPatch = buildClosedListingPatch()
+    }
+  }
+
   var next = Object.assign({}, submission, patch, { updatedAt: formatDate(new Date()) })
   if (submission.type === "connect"
     && next.status === "待交换确认"
@@ -5138,7 +5436,11 @@ exports.main = async function(event) {
     }
   }
 
-  if (!openid) {
+  var guestPublicActions = {
+    listListings: true,
+    getPublicListing: true
+  }
+  if (!openid && !guestPublicActions[action]) {
     return { ok: false, message: "未获取到用户身份，请重新打开小程序" }
   }
 
@@ -5147,7 +5449,9 @@ exports.main = async function(event) {
       case "sync":
         return await syncData(openid, payload)
       case "listListings":
-        return await listListings(payload, openid)
+        return await listListings(payload, openid || "")
+      case "getPublicListing":
+        return await getPublicListing(payload, openid || "")
       case "adminSync":
         return await adminSync(openid, payload)
       case "staffWorkbenchSync":
@@ -5200,6 +5504,8 @@ exports.main = async function(event) {
         return await adminSearchPublishedListings(openid, payload)
       case "adminLookupUser":
         return await adminLookupUser(openid, payload)
+      case "adminListUsers":
+        return await adminListUsers(openid, payload)
       default:
         return { ok: false, message: "未知操作: " + action }
     }

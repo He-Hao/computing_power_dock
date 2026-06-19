@@ -37,7 +37,7 @@ var config = {
   // 用户服务协议 / 隐私政策中的运营主体与联系邮箱（建议在 config.local.js 中填写真实信息）
   legalOperatorName: "算力码头运营方",
   legalContactEmail: "",
-  legalUpdateDate: "2026年06月15日"
+  legalUpdateDate: "2026年06月18日"
 
 }
 

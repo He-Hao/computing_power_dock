@@ -125,6 +125,41 @@ function refreshAllPublicListings(options) {
   return cloudStore.fetchBothPublicListings(options)
 }
 
+function applyPublicListingToCache(listing) {
+  if (!listing || !listing.id) {
+    return
+  }
+  var pool = listing.pool || (isResource(listing.id) ? "resource" : "demand")
+  var key = pool === "demand" ? publishedDemandsKey : publishedResourcesKey
+  var existing = wx.getStorageSync(key) || []
+  var found = false
+  var next = existing.map(function(item) {
+    if (item && item.id === listing.id) {
+      found = true
+      return sanitizePublicListingFields(listing)
+    }
+    return item
+  })
+  if (!found) {
+    next.unshift(listing)
+  }
+  wx.setStorageSync(key, next)
+}
+
+function fetchPublicListingById(listingId, options) {
+  options = options || {}
+  if (!isCloudEnabled() || !listingId) {
+    return Promise.resolve({ ok: true, local: true })
+  }
+  return cloudStore.fetchPublicListing(listingId, options).then(function(result) {
+    var listing = result && result.data && result.data.listing ? result.data.listing : null
+    if (listing) {
+      applyPublicListingToCache(listing)
+    }
+    return result
+  })
+}
+
 function markPoolNeedsForceRefresh() {
   try {
     var app = getApp()
@@ -485,6 +520,14 @@ function isListingClosed(item) {
   return !!(item && (item.status === "closed" || item.verification === "已关闭"))
 }
 
+function buildClosedListingPatch(extra) {
+  return Object.assign({
+    status: "closed",
+    verification: "已关闭",
+    publicDisplay: false
+  }, extra || {})
+}
+
 function isListingPendingReview(item) {
   return !!(item && item.verification === "待审核")
 }
@@ -506,11 +549,15 @@ function getProxyListingSubmission(item) {
   if (!item) {
     return null
   }
-  if (item.submissionId) {
-    return getSubmissionWithoutRebuild(item.submissionId)
-  }
   if (item.proxySubmissionOnly && item.id) {
     return getSubmissionWithoutRebuild(item.id)
+  }
+  var publishSubmission = resolveProxyPublishSubmissionForListing(item)
+  if (publishSubmission) {
+    return publishSubmission
+  }
+  if (item.submissionId) {
+    return getSubmissionWithoutRebuild(item.submissionId)
   }
   return null
 }
@@ -748,11 +795,25 @@ function proxySubmissionBelongsToStaff(submission, profile) {
   return false
 }
 
+/** 代发商机关联的发布提交记录（本地缓存 + listingId 反查） */
+function resolveProxyPublishSubmissionForListing(listing) {
+  if (!listing) {
+    return null
+  }
+  if (listing.submissionId) {
+    var linked = getSubmissionWithoutRebuild(listing.submissionId)
+    if (linked && isListingPublishSubmission(linked)) {
+      return linked
+    }
+  }
+  return findListingPublishSubmission(listing.id)
+}
+
 function enrichStaffProxyListingIdentity(listing, profile) {
   if (!listing || !listing.id || !profile || !profile.phone) {
     return listing
   }
-  var submission = listing.submissionId ? getSubmissionWithoutRebuild(listing.submissionId) : null
+  var submission = resolveProxyPublishSubmissionForListing(listing)
   if (!proxyListingBelongsToStaff(listing, profile) && !proxySubmissionBelongsToStaff(submission, profile)) {
     return listing
   }
@@ -779,11 +840,9 @@ function proxyListingBelongsToStaff(listing, profile) {
       return true
     }
   }
-  if (listing.submissionId) {
-    var submission = getSubmissionWithoutRebuild(listing.submissionId)
-    if (proxySubmissionBelongsToStaff(submission, profile)) {
-      return true
-    }
+  var publishSubmission = resolveProxyPublishSubmissionForListing(listing)
+  if (publishSubmission && proxySubmissionBelongsToStaff(publishSubmission, profile)) {
+    return true
   }
   return false
 }
@@ -840,6 +899,7 @@ function getStaffProxyListings() {
     seen[item.id] = true
     items.push(resolved)
   }
+  getUserCloudOwnListings().forEach(pushListing)
   getPublishedResources().concat(getPublishedDemands()).forEach(pushListing)
   if (isCloudEnabled()) {
     var pendingListings = wx.getStorageSync(adminPendingListingsKey) || []
@@ -901,6 +961,7 @@ function getStaffProxyListings() {
 function getStaffProxyListingViews() {
   return getStaffProxyListings().map(function(item) {
     var statusMeta = getProxyListingStatusMeta(item)
+    var publicDisplayView = getStaffProxyPublicDisplayViewForListing(item)
     if (item.proxySubmissionOnly) {
       var submissionOnlyResource = item.pool === "resource"
       return {
@@ -921,7 +982,11 @@ function getStaffProxyListingViews() {
         proxySubmissionOnly: true,
         proxyStatusLabel: statusMeta.label,
         proxyStatusClass: statusMeta.class,
-        proxyStatusKey: statusMeta.key
+        proxyStatusKey: statusMeta.key,
+        proxyPublicDisplayKey: publicDisplayView.key,
+        proxyPublicDisplayLabel: publicDisplayView.label,
+        proxyPublicDisplayClass: publicDisplayView.badgeClass,
+        showProxyPublicDisplay: publicDisplayView.show
       }
     }
     var isResourceItem = isResource(item.id)
@@ -941,7 +1006,11 @@ function getStaffProxyListingViews() {
       proxyClientCertHint: getStaffProxyClientCertHint(item),
       proxyStatusLabel: statusMeta.label,
       proxyStatusClass: statusMeta.class,
-      proxyStatusKey: statusMeta.key
+      proxyStatusKey: statusMeta.key,
+      proxyPublicDisplayKey: publicDisplayView.key,
+      proxyPublicDisplayLabel: publicDisplayView.label,
+      proxyPublicDisplayClass: publicDisplayView.badgeClass,
+      showProxyPublicDisplay: publicDisplayView.show
     })
   }).filter(Boolean)
 }
@@ -981,6 +1050,7 @@ function filterStaffProxyListingViews(items, options) {
   var pool = options.pool || "all"
   var status = options.status || "all"
   var activeType = options.activeType || "全部"
+  var publicDisplay = options.publicDisplay || "all"
   var keyword = String(options.keyword || "").trim().toLowerCase()
   return (items || []).filter(function(item) {
     if (pool === "resource" && item.isDemandListing) {
@@ -990,6 +1060,9 @@ function filterStaffProxyListingViews(items, options) {
       return false
     }
     if (status !== "all" && item.proxyStatusKey !== status) {
+      return false
+    }
+    if (publicDisplay !== "all" && item.proxyPublicDisplayKey !== publicDisplay) {
       return false
     }
     if (activeType !== "全部") {
@@ -2345,10 +2418,8 @@ function closeUserListing(listingId) {
       status: "已关闭",
       statusTimeline: statusTimeline,
       closedAt: formatDate(new Date()),
-      listingPatch: {
-        status: "closed",
-        verification: "已关闭"
-      }
+      publicDisplay: false,
+      listingPatch: buildClosedListingPatch()
     }).then(function() {
       return closeUnfinishedConnectsForListing(listingId)
     }).then(function() {
@@ -2360,15 +2431,12 @@ function closeUserListing(listingId) {
     })
   }
 
-  updatePublishedListing(listingId, {
-    status: "closed",
-    verification: "已关闭"
-  })
+  updatePublishedListing(listingId, buildClosedListingPatch())
   appendSubmissionTimeline(
     listing.submissionId,
     "已关闭",
     closeHint,
-    { closedAt: formatDate(new Date()) }
+    { closedAt: formatDate(new Date()), publicDisplay: false }
   )
   return closeUnfinishedConnectsForListing(listingId).then(function() {
     return { ok: true }
@@ -2380,13 +2448,41 @@ function closeUserDemand(listingId) {
 }
 
 function isListingPrivateDisplay(listing, submission) {
+  if (listing && isListingClosed(listing)) {
+    return true
+  }
   if (listing && listing.publicDisplay === false) {
+    return true
+  }
+  if (submission && submission.status === "已关闭") {
     return true
   }
   if (submission && submission.publicDisplay === false) {
     return true
   }
   return false
+}
+
+function getStaffProxyPublicDisplayViewForListing(listing) {
+  if (!listing) {
+    return { show: false, key: "public_on", label: "", badgeClass: "" }
+  }
+  var submission = resolveProxyPublishSubmissionForListing(listing)
+  var isPrivate = isListingPrivateDisplay(listing, submission)
+  return {
+    show: true,
+    key: isPrivate ? "public_off" : "public_on",
+    label: isPrivate ? "未公开展示" : "已公开展示",
+    badgeClass: isPrivate ? "public-display-off" : "public-display-on"
+  }
+}
+
+function getStaffProxyPublicDisplayFilterOptions() {
+  return [
+    { value: "all", label: "全部展示" },
+    { value: "public_on", label: "已公开展示" },
+    { value: "public_off", label: "未公开展示" }
+  ]
 }
 
 function getListingApprovedPublicHint(listing, submission, options) {
@@ -5755,16 +5851,13 @@ function adminTakeDownListingAsync(listingId, reason) {
       if (!result || result.ok === false) {
         return { ok: false, message: (result && result.message) || "下架失败" }
       }
-      updatePublishedListing(listingId, {
-        status: "closed",
-        verification: "已关闭"
-      })
+      updatePublishedListing(listingId, buildClosedListingPatch())
       if (result.data && result.data.listing && result.data.listing.submissionId) {
         appendSubmissionTimeline(
           result.data.listing.submissionId,
           "已关闭",
           reason || "平台管理员下架，不再公开展示。",
-          {}
+          { publicDisplay: false }
         )
       }
       return { ok: true }
@@ -5779,16 +5872,13 @@ function adminTakeDownListingAsync(listingId, reason) {
   if (isListingClosed(listing)) {
     return Promise.resolve({ ok: false, message: "该商机已下架" })
   }
-  updatePublishedListing(listingId, {
-    status: "closed",
-    verification: "已关闭"
-  })
+  updatePublishedListing(listingId, buildClosedListingPatch())
   if (listing.submissionId) {
     appendSubmissionTimeline(
       listing.submissionId,
       "已关闭",
       reason || "平台管理员下架，不再公开展示。",
-      {}
+      { publicDisplay: false }
     )
   }
   return closeUnfinishedConnectsForListing(listingId).then(function() {
@@ -5801,12 +5891,17 @@ function adminSearchPublishedListingsAsync(options) {
     return Promise.resolve({ ok: false, message: "仅平台管理员可查询", items: [] })
   }
   options = options || {}
+  var page = options.page || 1
+  var pageSize = options.pageSize || 20
+  var status = options.status || (options.includeClosed ? "all" : "published")
   if (isCloudEnabled()) {
     return cloudStore.adminSearchPublishedListingsRemote(options).then(function(result) {
       return {
         ok: !!(result && result.ok !== false),
         items: result && result.data ? (result.data.items || []) : [],
         total: result && result.data ? (result.data.total || 0) : 0,
+        page: result && result.data ? (result.data.page || page) : page,
+        hasMore: result && result.data ? !!result.data.hasMore : false,
         message: result && result.message
       }
     }).catch(function(error) {
@@ -5815,20 +5910,31 @@ function adminSearchPublishedListingsAsync(options) {
   }
   var keyword = String(options.keyword || "").trim().toLowerCase()
   var pool = options.pool || "all"
-  var includeClosed = !!options.includeClosed
   var source = []
   if (pool === "demand") {
     source = wx.getStorageSync(publishedDemandsKey) || []
   } else if (pool === "resource") {
     source = wx.getStorageSync(publishedResourcesKey) || []
   } else {
-    source = (wx.getStorageSync(publishedResourcesKey) || []).concat(wx.getStorageSync(publishedDemandsKey) || [])
+    var merged = (wx.getStorageSync(publishedResourcesKey) || []).concat(wx.getStorageSync(publishedDemandsKey) || [])
+    var seenIds = {}
+    source = []
+    merged.forEach(function(item) {
+      if (item && item.id && !seenIds[item.id]) {
+        seenIds[item.id] = true
+        source.push(item)
+      }
+    })
   }
   var items = source.filter(function(item) {
     if (!item || !item.id) {
       return false
     }
-    if (!includeClosed && isListingClosed(item)) {
+    var closed = isListingClosed(item)
+    if (status === "published" && (closed || isListingPendingReview(item))) {
+      return false
+    }
+    if (status === "closed" && !closed) {
       return false
     }
     if (!keyword) {
@@ -5837,6 +5943,8 @@ function adminSearchPublishedListingsAsync(options) {
     var haystack = [item.id, item.title, item.type, item.region, item.summary].join(" ").toLowerCase()
     return haystack.indexOf(keyword) > -1
   }).map(function(item) {
+    var closed = isListingClosed(item)
+    var pending = isListingPendingReview(item)
     return {
       id: item.id,
       pool: item.pool || (isResource(item.id) ? "resource" : "demand"),
@@ -5846,10 +5954,23 @@ function adminSearchPublishedListingsAsync(options) {
       verification: item.verification || "",
       publishedAt: item.publishedAt || "",
       ownerPhone: item.ownerPhone || "",
-      publishedByStaff: !!item.publishedByStaff
+      publishedByStaff: !!item.publishedByStaff,
+      statusKey: closed ? "closed" : (pending ? "pending" : "published"),
+      statusLabel: closed ? "已关闭" : (pending ? "待审核" : "已发布")
     }
   })
-  return Promise.resolve({ ok: true, items: items.slice(0, 50), total: items.length })
+  items.sort(function(a, b) {
+    return (b.publishedAt || "").localeCompare(a.publishedAt || "")
+  })
+  var total = items.length
+  var start = (page - 1) * pageSize
+  return Promise.resolve({
+    ok: true,
+    items: items.slice(start, start + pageSize),
+    total: total,
+    page: page,
+    hasMore: start + pageSize < total
+  })
 }
 
 function adminLookupUserAsync(phone) {
@@ -5888,6 +6009,77 @@ function adminLookupUserAsync(phone) {
       staffRole: profile.staffRole || ""
     }
   })
+}
+
+function adminListUsersAsync(options) {
+  options = options || {}
+  if (!isPlatformAdminUser()) {
+    return Promise.resolve({ ok: false, message: "仅平台管理员可查看用户列表" })
+  }
+  if (isCloudEnabled()) {
+    return cloudStore.adminListUsersRemote(options).then(function(result) {
+      if (!result || result.ok === false) {
+        return {
+          ok: false,
+          message: (result && result.message) || "加载失败",
+          items: [],
+          total: 0,
+          hasMore: false
+        }
+      }
+      var data = result.data || {}
+      return {
+        ok: true,
+        items: data.items || [],
+        total: data.total || 0,
+        page: data.page || 1,
+        pageSize: data.pageSize || 20,
+        hasMore: !!data.hasMore
+      }
+    }).catch(function(error) {
+      return {
+        ok: false,
+        message: error.message || "加载失败",
+        items: [],
+        total: 0,
+        hasMore: false
+      }
+    })
+  }
+  var profile = wx.getStorageSync(userProfileKey) || null
+  if (!profile || !profile.phone) {
+    return Promise.resolve({ ok: true, items: [], total: 0, hasMore: false })
+  }
+  var user = {
+    phone: profile.phone,
+    contact: profile.contact || "",
+    company: profile.company || "",
+    role: profile.role || "",
+    region: profile.region || "",
+    creditCode: profile.creditCode || "",
+    email: profile.email || "",
+    website: profile.website || "",
+    description: profile.description || "",
+    accountStatus: profile.accountStatus || "active",
+    accountDisabledAt: profile.accountDisabledAt || "",
+    accountDisabledReason: profile.accountDisabledReason || "",
+    certStatus: profile.certStatus || "",
+    certLevel: profile.certLevel || "",
+    certSubmittedAt: profile.certSubmittedAt || "",
+    certVerifiedAt: profile.certVerifiedAt || "",
+    staffRole: profile.staffRole || "",
+    phoneVerified: profile.phoneVerified !== false,
+    onboardingCompleted: !!profile.onboardingCompleted,
+    userIntent: profile.userIntent || "",
+    registeredAt: profile.registeredAt || "",
+    lastLoginAt: profile.lastLoginAt || "",
+    updatedAt: profile.updatedAt || "",
+    resourceCount: 0,
+    demandCount: 0,
+    connectCount: 0,
+    submissionCount: 0
+  }
+  return Promise.resolve({ ok: true, items: [user], total: 1, hasMore: false })
 }
 
 function adminDisableAccountAsync(phone, reason) {
@@ -6050,16 +6242,13 @@ function closeReportedListingLocal(listingId, reason) {
   if (!listing || isListingClosed(listing)) {
     return Promise.resolve(false)
   }
-  updatePublishedListing(listingId, {
-    status: "closed",
-    verification: "已关闭"
-  })
+  updatePublishedListing(listingId, buildClosedListingPatch())
   if (listing.submissionId) {
     appendSubmissionTimeline(
       listing.submissionId,
       "已关闭",
       reason || "因用户举报成立，平台已下架该商机。",
-      {}
+      { publicDisplay: false }
     )
   }
   return closeUnfinishedConnectsForListing(listingId).then(function() {
@@ -6089,17 +6278,15 @@ function approveListingReportReview(submissionId, reason) {
       reportReview: true
     }, getAdminAuthPayload())).then(function() {
       if (listingId) {
-        updatePublishedListing(listingId, {
-          status: "closed",
-          verification: "已关闭"
-        })
+        updatePublishedListing(listingId, buildClosedListingPatch())
       }
       return getSubmission(submissionId)
     })
   }
   return closeReportedListingLocal(listingId, hint).then(function() {
     return appendSubmissionTimeline(submissionId, "已关闭", hint, {
-      reviewResult: "成立"
+      reviewResult: "成立",
+      publicDisplay: false
     })
   })
 }
@@ -12502,6 +12689,7 @@ module.exports = {
   adminTakeDownListingAsync,
   adminSearchPublishedListingsAsync,
   adminLookupUserAsync,
+  adminListUsersAsync,
   adminDisableAccountAsync,
   adminEnableAccountAsync,
   approveSubmissionReview,
@@ -12514,6 +12702,7 @@ module.exports = {
   refreshStaffLaunchFromCloud,
   refreshPublicListings,
   refreshAllPublicListings,
+  fetchPublicListingById,
   refreshPoolPagesFromCloud,
   ensureOpenidBoundOnLaunch,
   validateDeviceSessionOnLaunch,
@@ -12539,6 +12728,7 @@ module.exports = {
   getStaffProxyListingViews,
   getStaffProxyHubStats,
   filterStaffProxyListingViews,
+  getStaffProxyPublicDisplayFilterOptions,
   findActiveConnectForListingPair,
   createStaffProxyMatchConnects,
   createStaffProxyMatchConnectsFromDemand,

@@ -654,6 +654,16 @@ Page({
     })
   },
 
+  copyOpsReviewText(event) {
+    event.stopPropagation && event.stopPropagation()
+    const copyText = require("../../utils/copyText")
+    var text = event.currentTarget.dataset.text || ""
+    copyText.copyTextToClipboard(text, {
+      emptyTip: "无内容可复制",
+      successTip: "已复制"
+    })
+  },
+
   approveOpsReview(event) {
     event.stopPropagation && event.stopPropagation()
     var id = event.currentTarget.dataset.id
@@ -765,6 +775,24 @@ Page({
         return
       }
       wx.navigateTo({ url: "/pages/admin-governance/admin-governance" })
+      return
+    }
+    if (action === "admin-listings") {
+      const data = require("../../utils/data")
+      if (!data.isPlatformAdminUser()) {
+        wx.showToast({ title: "仅平台管理员可用", icon: "none" })
+        return
+      }
+      wx.navigateTo({ url: "/pages/admin-listings/admin-listings" })
+      return
+    }
+    if (action === "admin-users") {
+      const data = require("../../utils/data")
+      if (!data.isPlatformAdminUser()) {
+        wx.showToast({ title: "仅平台管理员可用", icon: "none" })
+        return
+      }
+      wx.navigateTo({ url: "/pages/admin-users/admin-users" })
       return
     }
     if (action === "seed-demo") {

@@ -28,6 +28,9 @@
     "pages/admin/admin",
     "pages/admin-review/admin-review",
     "pages/admin-governance/admin-governance",
+    "pages/admin-users/admin-users",
+    "pages/admin-listings/admin-listings",
+    "pages/admin-user-detail/admin-user-detail",
     "pages/ops-reports/ops-reports",
     "pages/report-records/report-records"
   ],

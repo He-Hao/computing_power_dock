@@ -156,10 +156,16 @@ function buildAdminGovernanceSection() {
     title: "平台治理",
     items: [
       {
-        key: "admin-governance",
-        icon: "管",
-        title: "下架与账号",
-        action: "admin-governance"
+        key: "admin-users",
+        icon: "用",
+        title: "全部用户",
+        action: "admin-users"
+      },
+      {
+        key: "admin-listings",
+        icon: "商",
+        title: "全部商机",
+        action: "admin-listings"
       }
     ]
   }

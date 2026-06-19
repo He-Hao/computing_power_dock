@@ -73,6 +73,17 @@
         >{{item.label}}</view>
       </view>
     </scroll-view>
+    <scroll-view scroll-x class="filter-scroll proxy-filter-row" enhanced show-scrollbar="{{false}}">
+      <view class="filter-scroll-inner">
+        <view
+          class="filter-chip {{activePublicDisplay === item.value ? 'active' : ''}}"
+          wx:for="{{publicDisplayFilters}}"
+          wx:key="value"
+          bindtap="setPublicDisplayFilter"
+          data-value="{{item.value}}"
+        >{{item.label}}</view>
+      </view>
+    </scroll-view>
     <view class="proxy-result-count">共 {{filteredCount}} 条</view>
   </view>
 
@@ -97,6 +108,10 @@
           <text class="tag {{item.poolTagClass}}">{{item.poolTypeLabel}}</text>
           <text class="proxy-card-type">{{item.type}}</text>
           <text class="proxy-card-status {{item.proxyStatusClass}}">{{item.proxyStatusLabel}}</text>
+          <text
+            class="proxy-card-status {{item.proxyPublicDisplayClass}}"
+            wx:if="{{item.showProxyPublicDisplay}}"
+          >{{item.proxyPublicDisplayLabel}}</text>
         </view>
         <text class="proxy-card-time">{{item.poolTimeLabel}}</text>
       </view>

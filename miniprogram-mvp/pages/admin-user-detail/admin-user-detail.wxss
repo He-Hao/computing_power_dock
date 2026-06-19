@@ -1,0 +1,47 @@
+@import "../admin-governance/admin-governance.wxss";
+
+.admin-user-detail-page {
+  padding: 24rpx;
+  padding-bottom: 48rpx;
+}
+
+.user-hero-card {
+  padding: 28rpx 24rpx;
+  margin-bottom: 20rpx;
+}
+
+.user-hero-phone {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #101820;
+}
+
+.user-hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 16rpx;
+}
+
+.user-hero-subtitle {
+  margin-top: 16rpx;
+  font-size: 28rpx;
+  color: #68717d;
+  line-height: 1.5;
+}
+
+.section-title.compact {
+  margin-bottom: 8rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #101820;
+}
+
+.user-action-card {
+  margin-top: 20rpx;
+}
+
+.gov-tag.danger {
+  background: #fff1f0;
+  color: #c0392b;
+}

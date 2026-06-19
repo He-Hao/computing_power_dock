@@ -1,0 +1,8 @@
+{
+  "*": {
+    "invoke": "auth != null"
+  },
+  "tradeApi": {
+    "invoke": true
+  }
+}

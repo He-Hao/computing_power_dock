@@ -1,0 +1,73 @@
+<view class="page admin-listings-page">
+  <view class="gov-toolbar card">
+    <view class="search-box gov-search-box">
+      <view class="gov-search-field">
+        <text class="search-icon">搜</text>
+        <input
+          class="gov-search-input"
+          value="{{keyword}}"
+          bindinput="onKeywordInput"
+          bindconfirm="searchListings"
+          placeholder="编号 URES-/UDEM-、标题、类型、地区"
+        />
+      </view>
+      <text class="gov-search-btn {{loading ? 'btn-busy' : ''}}" bindtap="searchListings">{{loading ? '搜索中...' : '搜索'}}</text>
+    </view>
+    <scroll-view scroll-x class="filter-scroll gov-filter-row" enhanced show-scrollbar="{{false}}">
+      <view class="filter-scroll-inner">
+        <view
+          class="filter-chip {{activePool === item.value ? 'active' : ''}}"
+          wx:for="{{poolFilters}}"
+          wx:key="value"
+          data-value="{{item.value}}"
+          bindtap="setPoolFilter"
+        >{{item.label}}</view>
+      </view>
+    </scroll-view>
+    <scroll-view scroll-x class="filter-scroll gov-filter-row" enhanced show-scrollbar="{{false}}">
+      <view class="filter-scroll-inner">
+        <view
+          class="filter-chip {{activeStatus === item.value ? 'active' : ''}}"
+          wx:for="{{statusFilters}}"
+          wx:key="value"
+          data-value="{{item.value}}"
+          bindtap="setStatusFilter"
+        >{{item.label}}</view>
+      </view>
+    </scroll-view>
+    <view class="proxy-result-count">共 {{total}} 条商机</view>
+  </view>
+
+  <view class="gov-empty card" wx:if="{{!loading && items.length === 0}}">
+    <view class="gov-empty-title">{{keyword ? '暂无匹配商机' : '暂无商机'}}</view>
+    <view class="gov-empty-text" wx:if="{{keyword}}">请调整搜索或筛选条件后重试</view>
+  </view>
+
+  <view class="card gov-item listing-card" wx:for="{{items}}" wx:key="id">
+    <view class="gov-item-head">
+      <text class="gov-tag {{item.pool === 'resource' ? 'resource' : 'demand'}}">{{item.pool === 'resource' ? '资源' : '需求'}}</text>
+      <text class="gov-tag muted" wx:if="{{item.publishedByStaff}}">代发</text>
+      <text class="listing-status {{item.statusKey}}">{{item.statusLabel}}</text>
+      <text class="gov-item-id">{{item.id}}</text>
+    </view>
+    <view class="gov-item-title">{{item.title}}</view>
+    <view class="gov-item-meta">{{item.type}} · {{item.region || '地区待填'}} · {{item.publishedAt}}</view>
+    <view class="gov-item-meta muted" wx:if="{{item.ownerPhone}}">发布方手机：{{item.ownerPhone}}</view>
+    <view class="gov-item-actions">
+      <view class="gov-btn ghost" bindtap="previewListing" data-id="{{item.id}}">预览</view>
+      <view
+        class="gov-btn danger {{takingDownId === item.id ? 'btn-busy' : ''}}"
+        wx:if="{{item.statusKey !== 'closed'}}"
+        bindtap="takeDownListing"
+        data-id="{{item.id}}"
+        data-title="{{item.title}}"
+      >{{takingDownId === item.id ? '下架中...' : '强制下架'}}</view>
+    </view>
+  </view>
+
+  <list-pagination-foot
+    total="{{total}}"
+    loading="{{loadingMore}}"
+    has-more="{{hasMore}}"
+  />
+</view>

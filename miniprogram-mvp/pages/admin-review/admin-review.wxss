@@ -71,6 +71,10 @@
   word-break: break-all;
 }
 
+.copyable-text {
+  word-break: break-all;
+}
+
 .review-summary {
   padding: 18rpx;
   border-radius: 8rpx;

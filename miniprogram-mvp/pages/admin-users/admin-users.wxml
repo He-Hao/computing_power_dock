@@ -1,0 +1,66 @@
+<view class="page admin-users-page">
+  <view class="gov-toolbar card">
+    <view class="search-box gov-search-box">
+      <view class="gov-search-field">
+        <text class="search-icon">🔍</text>
+        <input
+          class="gov-search-input"
+          value="{{keyword}}"
+          bindinput="onKeywordInput"
+          bindconfirm="searchUsers"
+          placeholder="搜索手机号、企业、联系人、邮箱、信用代码"
+        />
+      </view>
+      <text class="gov-search-btn {{loading ? 'btn-busy' : ''}}" bindtap="searchUsers">{{loading ? '搜索中...' : '搜索'}}</text>
+    </view>
+    <scroll-view scroll-x class="filter-scroll gov-filter-row" enhanced show-scrollbar="{{false}}">
+      <view class="filter-scroll-inner">
+        <view
+          class="filter-chip {{activeFilter === item.value ? 'active' : ''}}"
+          wx:for="{{filterOptions}}"
+          wx:key="value"
+          data-value="{{item.value}}"
+          bindtap="setFilter"
+        >{{item.label}}</view>
+      </view>
+    </scroll-view>
+    <view class="proxy-result-count">共 {{total}} 位用户 · 点击查看详情</view>
+  </view>
+
+  <view class="gov-empty card" wx:if="{{!loading && items.length === 0}}">
+    <view class="gov-empty-title">{{keyword || activeFilter !== 'all' ? '暂无匹配用户' : '暂无注册用户'}}</view>
+    <view class="gov-empty-text" wx:if="{{keyword || activeFilter !== 'all'}}">请调整搜索或筛选条件后重试</view>
+  </view>
+
+  <view
+    class="card user-card"
+    wx:for="{{items}}"
+    wx:key="phone"
+    bindtap="openUserDetail"
+    data-phone="{{item.phone}}"
+  >
+    <view class="user-card-head">
+      <text class="user-phone copyable-text" catchlongpress="copyUserText" data-text="{{item.phone}}">{{item.phone}}</text>
+      <text class="gov-tag muted" wx:if="{{item.staffRole}}">{{item.staffRoleText}}</text>
+      <text class="gov-tag danger" wx:elif="{{item.accountStatus === 'disabled'}}">已禁用</text>
+      <text class="gov-tag" wx:elif="{{item.certStatus === 'verified'}}">{{item.certLevel === 'license' ? '执照认证' : '名片认证'}}</text>
+      <text class="gov-tag muted" wx:elif="{{item.certStatus === 'pending'}}">认证审核中</text>
+    </view>
+
+    <view class="user-card-contact">{{item.contactLine}}</view>
+    <view class="user-card-subtitle" wx:if="{{item.subtitle}}">{{item.subtitle}}</view>
+    <view class="user-card-meta" wx:if="{{item.metaLine}}">{{item.metaLine}}</view>
+    <view class="user-card-meta muted" wx:if="{{item.activityText}}">{{item.activityText}}</view>
+
+    <view class="user-card-foot">
+      <text class="user-card-hint">点击查看完整资料</text>
+      <text class="user-card-action">详情 ›</text>
+    </view>
+  </view>
+
+  <list-pagination-foot
+    total="{{total}}"
+    loading="{{loadingMore}}"
+    has-more="{{hasMore}}"
+  />
+</view>

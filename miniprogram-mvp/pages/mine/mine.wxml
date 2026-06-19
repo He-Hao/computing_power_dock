@@ -315,7 +315,7 @@
             <text wx:if="{{item.listingType}}"> · {{item.listingType}}</text>
           </view>
           <view class="admin-item-proxy-title muted" wx:if="{{item.proxyListingTitle}}">代发商机：{{item.proxyListingTitle}}</view>
-          <view class="admin-item-contact" wx:if="{{item.contactLine}}">{{item.contactLine}}</view>
+          <view class="admin-item-contact copyable-text" wx:if="{{item.contactLine}}" bindlongpress="copyOpsReviewText" data-text="{{item.contactLine}}">{{item.contactLine}}</view>
           <view class="admin-item-summary" wx:if="{{item.summary}}">{{item.summary}}</view>
           <view class="admin-item-time">{{item.createdAt}}</view>
           <view class="admin-item-actions">

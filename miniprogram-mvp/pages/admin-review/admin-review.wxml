@@ -9,11 +9,11 @@
 
   <view class="card">
     <view class="section-title compact">申请方信息</view>
-    <view class="review-row"><text class="label">企业</text><text>{{item.company || '未填写'}}</text></view>
-    <view class="review-row" wx:if="{{item.showApplicantRegionRole}}"><text class="label">角色</text><text>{{item.role || '未填写'}}</text></view>
-    <view class="review-row"><text class="label">联系人</text><text>{{item.contact || '未填写'}}</text></view>
-    <view class="review-row"><text class="label">手机号</text><text>{{item.phone || '未填写'}}</text></view>
-    <view class="review-row" wx:if="{{item.showApplicantRegionRole}}"><text class="label">企业所在地</text><text>{{item.region || '未填写'}}</text></view>
+    <view class="review-row"><text class="label">企业</text><text class="value copyable-text" bindlongpress="copyReviewText" data-text="{{item.company}}">{{item.company || '未填写'}}</text></view>
+    <view class="review-row" wx:if="{{item.showApplicantRegionRole}}"><text class="label">角色</text><text class="value copyable-text" bindlongpress="copyReviewText" data-text="{{item.role}}">{{item.role || '未填写'}}</text></view>
+    <view class="review-row"><text class="label">联系人</text><text class="value copyable-text" bindlongpress="copyReviewText" data-text="{{item.contact}}">{{item.contact || '未填写'}}</text></view>
+    <view class="review-row"><text class="label">手机号</text><text class="value copyable-text" bindlongpress="copyReviewText" data-text="{{item.phone}}">{{item.phone || '未填写'}}</text></view>
+    <view class="review-row" wx:if="{{item.showApplicantRegionRole}}"><text class="label">企业所在地</text><text class="value copyable-text" bindlongpress="copyReviewText" data-text="{{item.region}}">{{item.region || '未填写'}}</text></view>
   </view>
 
   <view class="card" wx:if="{{item.summary}}">
@@ -38,11 +38,11 @@
 
   <view class="card" wx:if="{{item.isProxyConnectReview && item.proxyInfo}}">
     <view class="section-title compact">代发信息</view>
-    <view class="review-row"><text class="label">代发类型</text><text>{{item.proxyInfo.proxySide || '代发商机'}}</text></view>
-    <view class="review-row"><text class="label">代发商机</text><text>{{item.proxyInfo.proxyListingTitle || '未关联'}}</text></view>
-    <view class="review-row"><text class="label">代发客户</text><text>{{item.proxyInfo.proxyClientPhone || '未填写'}}</text></view>
-    <view class="review-row" wx:if="{{item.proxyInfo.proxyStaffPhone}}"><text class="label">代发运营</text><text>{{item.proxyInfo.proxyStaffPhone}}</text></view>
-    <view class="review-row"><text class="label">申请来源</text><text>{{item.proxyInfo.applyType || '第三方申请对接'}}</text></view>
+    <view class="review-row"><text class="label">代发类型</text><text class="value copyable-text" bindlongpress="copyReviewText" data-text="{{item.proxyInfo.proxySide}}">{{item.proxyInfo.proxySide || '代发商机'}}</text></view>
+    <view class="review-row"><text class="label">代发商机</text><text class="value copyable-text" bindlongpress="copyReviewText" data-text="{{item.proxyInfo.proxyListingTitle}}">{{item.proxyInfo.proxyListingTitle || '未关联'}}</text></view>
+    <view class="review-row"><text class="label">代发客户</text><text class="value copyable-text" bindlongpress="copyReviewText" data-text="{{item.proxyInfo.proxyClientPhone}}">{{item.proxyInfo.proxyClientPhone || '未填写'}}</text></view>
+    <view class="review-row" wx:if="{{item.proxyInfo.proxyStaffPhone}}"><text class="label">代发运营</text><text class="value copyable-text" bindlongpress="copyReviewText" data-text="{{item.proxyInfo.proxyStaffPhone}}">{{item.proxyInfo.proxyStaffPhone}}</text></view>
+    <view class="review-row"><text class="label">申请来源</text><text class="value copyable-text" bindlongpress="copyReviewText" data-text="{{item.proxyInfo.applyType}}">{{item.proxyInfo.applyType || '第三方申请对接'}}</text></view>
   </view>
 
   <view class="card" wx:if="{{item.isConnectReview && item.connectParties.length > 0}}">
@@ -53,7 +53,7 @@
       </view>
       <view class="party-title">{{item.title}}</view>
       <view class="party-meta" wx:if="{{item.type}}">{{item.type}} · {{item.region}}</view>
-      <view class="party-meta">{{item.company}} · {{item.contact}} · {{item.phone}}</view>
+      <view class="party-meta copyable-text" bindlongpress="copyReviewText" data-text="{{item.company}} · {{item.contact}} · {{item.phone}}">{{item.company}} · {{item.contact}} · {{item.phone}}</view>
       <view class="party-summary" wx:if="{{item.summary}}">{{item.summary}}</view>
     </view>
   </view>

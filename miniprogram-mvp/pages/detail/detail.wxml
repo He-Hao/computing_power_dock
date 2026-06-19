@@ -323,6 +323,10 @@
   </view>
 </view>
 
+<view class="page" wx:elif="{{detailLoading}}">
+  <view class="empty">正在加载商机…</view>
+</view>
+
 <view class="page" wx:else>
   <view class="empty">没有找到这条商机</view>
 </view>

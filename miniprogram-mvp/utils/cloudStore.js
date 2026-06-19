@@ -84,7 +84,7 @@ function getCloudErrorMessage(err) {
       return "云函数执行超时（3秒默认限制）：请在开发者工具右键 cloudfunctions/tradeApi →「上传并部署：云端安装依赖」，部署后超时将提升至 120 秒"
     }
     if (err.errMsg.indexOf("-501023") > -1 || err.errMsg.indexOf("Unauthenticated") > -1) {
-      return "云环境未开放访问权限（-501023）：请在云开发控制台 → 设置 → 权限设置 → 开启「未登录用户可访问云资源」；并在云函数 tradeApi → 云函数权限中允许未登录用户调用。若使用 prod 环境，请确认该环境已绑定当前小程序 AppID"
+      return "云环境未开放未登录访问（-501023）：请在云开发控制台 → 设置 → 权限设置 → 开启「未登录用户可访问云资源」；并在云函数 → 权限设置 → 自定义安全规则中按 cloudfunctions/cloudfunction-rules.json 允许 tradeApi 被未登录调用。朋友圈单页模式依赖此配置。若使用 prod 环境，请确认该环境已绑定当前小程序 AppID"
     }
     return err.errMsg
   }
@@ -384,6 +384,18 @@ function pullUserDataFromCloud(options) {
       saveCloudStatus("error")
     }
     return Promise.reject(err)
+  })
+}
+
+function fetchPublicListing(listingId, options) {
+  options = options || {}
+  if (!isCloudEnabled() || !listingId) {
+    return Promise.resolve({ ok: true, local: true })
+  }
+  return callTradeApi("getPublicListing", {
+    listingId: listingId
+  }, {
+    silent: options.silent === true
   })
 }
 
@@ -915,13 +927,26 @@ function adminSearchPublishedListingsRemote(options) {
   return callTradeApi("adminSearchPublishedListings", {
     keyword: options.keyword || "",
     pool: options.pool || "all",
-    includeClosed: !!options.includeClosed
+    status: options.status || "published",
+    includeClosed: !!options.includeClosed,
+    page: options.page || 1,
+    pageSize: options.pageSize || 20
   })
 }
 
 function adminLookupUserRemote(phone) {
   return callTradeApi("adminLookupUser", {
     phone: phone
+  })
+}
+
+function adminListUsersRemote(options) {
+  options = options || {}
+  return callTradeApi("adminListUsers", {
+    keyword: options.keyword || "",
+    filter: options.filter || "all",
+    page: options.page || 1,
+    pageSize: options.pageSize || 20
   })
 }
 
@@ -1289,6 +1314,7 @@ module.exports = {
   refreshFromCloud: refreshFromCloud,
   refreshUserLiteFromCloud: refreshUserLiteFromCloud,
   refreshFromCloudSilent: refreshFromCloudSilent,
+  fetchPublicListing: fetchPublicListing,
   fetchPublicListings: fetchPublicListings,
   fetchBothPublicListings: fetchBothPublicListings,
   fetchBothPublicListingsSilent: fetchBothPublicListingsSilent,
@@ -1325,6 +1351,7 @@ module.exports = {
   adminEnableAccountRemote: adminEnableAccountRemote,
   adminSearchPublishedListingsRemote: adminSearchPublishedListingsRemote,
   adminLookupUserRemote: adminLookupUserRemote,
+  adminListUsersRemote: adminListUsersRemote,
   isCloudFileId: isCloudFileId,
   isLocalMediaPath: isLocalMediaPath,
   resolveCloudImageUrls: resolveCloudImageUrls,

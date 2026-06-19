@@ -84,25 +84,69 @@
     <view class="card gov-user-card" wx:elif="{{accountUser}}">
       <view class="gov-user-row">
         <text class="gov-user-label">手机号</text>
-        <text class="gov-user-value">{{accountUser.phone}}</text>
+        <text class="gov-user-value copyable-text" bindlongpress="copyAccountText" data-text="{{accountUser.phone}}">{{accountUser.phone}}</text>
       </view>
       <view class="gov-user-row">
         <text class="gov-user-label">联系人</text>
-        <text class="gov-user-value">{{accountUser.contact || '—'}}</text>
+        <text class="gov-user-value copyable-text" bindlongpress="copyAccountText" data-text="{{accountUser.contact}}">{{accountUser.contact || '—'}}</text>
       </view>
       <view class="gov-user-row">
         <text class="gov-user-label">企业</text>
-        <text class="gov-user-value">{{accountUser.company || '—'}}</text>
+        <text class="gov-user-value copyable-text" bindlongpress="copyAccountText" data-text="{{accountUser.company}}">{{accountUser.company || '—'}}</text>
+      </view>
+      <view class="gov-user-row" wx:if="{{accountUser.role}}">
+        <text class="gov-user-label">角色</text>
+        <text class="gov-user-value">{{accountUser.role}}</text>
+      </view>
+      <view class="gov-user-row" wx:if="{{accountUser.region}}">
+        <text class="gov-user-label">所在地</text>
+        <text class="gov-user-value">{{accountUser.region}}</text>
+      </view>
+      <view class="gov-user-row" wx:if="{{accountUser.creditCode}}">
+        <text class="gov-user-label">信用代码</text>
+        <text class="gov-user-value copyable-text" bindlongpress="copyAccountText" data-text="{{accountUser.creditCode}}">{{accountUser.creditCode}}</text>
+      </view>
+      <view class="gov-user-row" wx:if="{{accountUser.email}}">
+        <text class="gov-user-label">邮箱</text>
+        <text class="gov-user-value copyable-text" bindlongpress="copyAccountText" data-text="{{accountUser.email}}">{{accountUser.email}}</text>
+      </view>
+      <view class="gov-user-row" wx:if="{{accountUser.website}}">
+        <text class="gov-user-label">网站</text>
+        <text class="gov-user-value copyable-text" bindlongpress="copyAccountText" data-text="{{accountUser.website}}">{{accountUser.website}}</text>
+      </view>
+      <view class="gov-user-row" wx:if="{{accountUser.description}}">
+        <text class="gov-user-label">企业简介</text>
+        <text class="gov-user-value">{{accountUser.description}}</text>
       </view>
       <view class="gov-user-row">
         <text class="gov-user-label">认证</text>
-        <text class="gov-user-value">{{accountUser.certLevel || '未认证'}} / {{accountUser.certStatus || '—'}}</text>
+        <text class="gov-user-value">{{accountUser.certStatusText || '未认证'}}</text>
+      </view>
+      <view class="gov-user-row" wx:if="{{accountUser.certVerifiedAt}}">
+        <text class="gov-user-label">认证通过</text>
+        <text class="gov-user-value">{{accountUser.certVerifiedAt}}</text>
       </view>
       <view class="gov-user-row">
         <text class="gov-user-label">账号状态</text>
         <text class="gov-user-value {{accountUser.accountStatus === 'disabled' ? 'danger-text' : 'ok-text'}}">
           {{accountUser.accountStatus === 'disabled' ? '已禁用' : '正常'}}
         </text>
+      </view>
+      <view class="gov-user-row" wx:if="{{accountUser.staffRole}}">
+        <text class="gov-user-label">运营身份</text>
+        <text class="gov-user-value">{{accountUser.staffRole === 'admin' ? '平台管理员' : '运营专员'}}</text>
+      </view>
+      <view class="gov-user-row" wx:if="{{accountUser.userIntentText}}">
+        <text class="gov-user-label">注册意向</text>
+        <text class="gov-user-value">{{accountUser.userIntentText}}</text>
+      </view>
+      <view class="gov-user-row" wx:if="{{accountUser.registeredAt}}">
+        <text class="gov-user-label">注册时间</text>
+        <text class="gov-user-value">{{accountUser.registeredAt}}</text>
+      </view>
+      <view class="gov-user-row" wx:if="{{accountUser.lastLoginAt}}">
+        <text class="gov-user-label">最近登录</text>
+        <text class="gov-user-value">{{accountUser.lastLoginAt}}</text>
       </view>
       <view class="gov-user-reason muted" wx:if="{{accountUser.accountStatus === 'disabled' && accountUser.accountDisabledReason}}">
         禁用原因：{{accountUser.accountDisabledReason}}

@@ -239,6 +239,16 @@
   color: #a33b2d;
 }
 
+.proxy-card-status.public-display-on {
+  background: #e9f5f1;
+  color: #176b5b;
+}
+
+.proxy-card-status.public-display-off {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
 .proxy-card-time {
   flex-shrink: 0;
   font-size: 22rpx;

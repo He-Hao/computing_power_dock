@@ -1,6 +1,72 @@
 var DEFAULT_FRIEND_TITLE = "算力码头 — 算力产业链商机撮合"
 var DEFAULT_TIMELINE_TITLE = "算力码头 · 真实算力资源与需求对接"
 
+function getLaunchContext() {
+  var launch = {}
+  var enter = {}
+  try {
+    if (wx.getLaunchOptionsSync) {
+      launch = wx.getLaunchOptionsSync() || {}
+    }
+  } catch (error) {
+    launch = {}
+  }
+  try {
+    if (wx.getEnterOptionsSync) {
+      enter = wx.getEnterOptionsSync() || {}
+    }
+  } catch (error) {
+    enter = {}
+  }
+  return {
+    launch: launch,
+    enter: enter,
+    query: Object.assign({}, launch.query || {}, enter.query || {}),
+    mode: enter.mode || launch.mode || "",
+    scene: enter.scene || launch.scene || 0
+  }
+}
+
+function isSinglePageLaunch() {
+  var ctx = getLaunchContext()
+  return ctx.mode === "singlePage"
+}
+
+function isShareLaunchQuery(query) {
+  query = query || {}
+  return query.from === "share" || !!query.id
+}
+
+function isGuestCloudLaunch() {
+  if (isSinglePageLaunch()) {
+    return true
+  }
+  var ctx = getLaunchContext()
+  return isShareLaunchQuery(ctx.query)
+}
+
+function decodeQueryValue(value) {
+  if (!value) {
+    return ""
+  }
+  try {
+    return decodeURIComponent(String(value))
+  } catch (error) {
+    return String(value)
+  }
+}
+
+/** 朋友圈单页模式等场景下 onLoad(options) 可能缺参，须合并启动/进入参数 */
+function mergePageLaunchOptions(pageOptions) {
+  pageOptions = pageOptions || {}
+  var ctx = getLaunchContext()
+  var merged = Object.assign({}, ctx.query || {}, pageOptions)
+  if (merged.id) {
+    merged.id = decodeQueryValue(merged.id)
+  }
+  return merged
+}
+
 function enableShareMenus() {
   if (!wx.showShareMenu) {
     return
@@ -100,6 +166,12 @@ function promptShareTimeline(options) {
 }
 
 module.exports = {
+  getLaunchContext: getLaunchContext,
+  isSinglePageLaunch: isSinglePageLaunch,
+  isShareLaunchQuery: isShareLaunchQuery,
+  isGuestCloudLaunch: isGuestCloudLaunch,
+  decodeQueryValue: decodeQueryValue,
+  mergePageLaunchOptions: mergePageLaunchOptions,
   enableShareMenus: enableShareMenus,
   buildHomeShareAppMessage: buildHomeShareAppMessage,
   buildHomeShareTimeline: buildHomeShareTimeline,

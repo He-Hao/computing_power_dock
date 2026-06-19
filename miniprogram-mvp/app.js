@@ -1,5 +1,6 @@
 const data = require("./utils/data")
 const config = require("./utils/config")
+const share = require("./utils/share")
 
 App({
   onLaunch() {
@@ -18,9 +19,17 @@ App({
 
     try {
       if (data.isCloudEnabled()) {
-        var isGuestLaunch = !data.isUserRegistered()
+        var isGuestLaunch = !data.isUserRegistered() || share.isGuestCloudLaunch()
+        var launchContext = share.getLaunchContext()
+        var shareListingId = launchContext.query && launchContext.query.id
+          ? decodeURIComponent(launchContext.query.id)
+          : ""
         var syncPromise = isGuestLaunch
-          ? data.refreshAllPublicListings({ silent: true })
+          ? (shareListingId
+            ? data.fetchPublicListingById(shareListingId, { silent: true }).catch(function() {
+              return data.refreshAllPublicListings({ silent: true })
+            })
+            : data.refreshAllPublicListings({ silent: true }))
           : data.validateDeviceSessionOnLaunch().then(function() {
             if (!data.isUserRegistered()) {
               return data.refreshAllPublicListings({ silent: true })

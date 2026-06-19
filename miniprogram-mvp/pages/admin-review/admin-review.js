@@ -275,5 +275,14 @@ Page({
       current: url,
       urls: urls
     })
+  },
+
+  copyReviewText(event) {
+    const copyText = require("../../utils/copyText")
+    var text = event.currentTarget.dataset.text || ""
+    copyText.copyTextToClipboard(text, {
+      emptyTip: "无内容可复制",
+      successTip: "已复制"
+    })
   }
 })
