@@ -2,7 +2,7 @@
  * 企业/名片认证门禁 — 唯一规则源（口径见 10_权限规则.md v1.13 §3.1）
  *
  * 对接、匹配、发布需求/资源：需名片或执照认证。
- * 查看资源附件：需执照认证（license_attachment，走 promptLicenseCertification）。
+ * 查看资源附件：需名片或执照认证（走 promptLicenseCertification）。
  */
 
 var CertAction = {

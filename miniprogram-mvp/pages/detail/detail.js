@@ -235,6 +235,57 @@ Page({
     return "搜索标题、类型、地区..."
   },
 
+  loadResourceAttachments(data, rawItem, options, attachmentOptions) {
+    var emptyState = {
+      hasListingAttachments: false,
+      canViewAttachments: false,
+      listingAttachments: []
+    }
+    if (!rawItem || !options.id || !data.isResource(options.id)) {
+      return Promise.resolve(emptyState)
+    }
+    var meta = data.getListingAttachments(rawItem, attachmentOptions)
+    var state = {
+      hasListingAttachments: meta.hasAttachments,
+      canViewAttachments: meta.canView,
+      listingAttachments: []
+    }
+    if (meta.canView && meta.attachments.length) {
+      return data.resolveSubmissionAttachments(meta.attachments).then(function(resolved) {
+        state.listingAttachments = resolved || []
+        return state
+      }).catch(function() {
+        state.listingAttachments = meta.attachments || []
+        return state
+      })
+    }
+    var needsCloudFetch = data.isCloudEnabled()
+      && (!meta.hasAttachments || (meta.canView && !meta.attachments.length))
+    if (!needsCloudFetch) {
+      return Promise.resolve(state)
+    }
+    return data.fetchListingAttachmentsFromCloud(options.id, { silent: true }).then(function(result) {
+      var cloudData = result && result.data
+      if (!cloudData) {
+        return state
+      }
+      state.hasListingAttachments = !!cloudData.hasAttachments
+      state.canViewAttachments = !!cloudData.canView
+      if (!cloudData.canView || !cloudData.attachments || !cloudData.attachments.length) {
+        return state
+      }
+      return data.resolveSubmissionAttachments(cloudData.attachments).then(function(resolved) {
+        state.listingAttachments = resolved || []
+        return state
+      }).catch(function() {
+        state.listingAttachments = cloudData.attachments || []
+        return state
+      })
+    }).catch(function() {
+      return state
+    })
+  },
+
   buildMatchPickerState(data, listingId, mode, isResourceListing) {
     var matchPickerExpanded = !!this.data.matchPickerExpanded
     var matchLimit = matchPickerExpanded ? 20 : 3
@@ -593,26 +644,30 @@ Page({
               : (data.isUserRegistered() && !data.canSubmitListing()
                 ? "认证后申请对接"
                 : "申请对接")))
+      var attachmentOptions = {
+        isPublisher: isPublisher,
+        isListingPublisher: isPublisher,
+        isStaffProxyView: isStaffProxyView
+      }
       var attachmentState = {
         hasListingAttachments: false,
         canViewAttachments: false,
         listingAttachments: []
       }
       if (isResource && rawItem) {
-        var attachmentMeta = data.getListingAttachments(rawItem, {
-          isPublisher: isPublisher,
-          isListingPublisher: isPublisher,
-          isStaffProxyView: isStaffProxyView
-        })
-        attachmentState.hasListingAttachments = attachmentMeta.hasAttachments
-        attachmentState.canViewAttachments = attachmentMeta.canView
-        if (attachmentMeta.hasAttachments && attachmentMeta.canView) {
-          data.resolveSubmissionAttachments(attachmentMeta.attachments).then(function(resolved) {
-            this.setData({ listingAttachments: resolved || [] })
-          }.bind(this)).catch(function() {
-            this.setData({ listingAttachments: attachmentMeta.attachments || [] })
-          }.bind(this))
-        }
+        var syncMeta = data.getListingAttachments(rawItem, attachmentOptions)
+        attachmentState.hasListingAttachments = syncMeta.hasAttachments
+        attachmentState.canViewAttachments = syncMeta.canView
+        this.loadResourceAttachments(data, rawItem, options, attachmentOptions).then(function(attState) {
+          if (this.data.itemId !== options.id) {
+            return
+          }
+          this.setData({
+            hasListingAttachments: attState.hasListingAttachments,
+            canViewAttachments: attState.canViewAttachments,
+            listingAttachments: attState.listingAttachments || []
+          })
+        }.bind(this))
       }
       var publisherViewOptions = {
         isListingPublisher: isPublisher,
@@ -1267,7 +1322,12 @@ Page({
   },
 
   goCertifyForAttachments() {
-    require("../../utils/data").promptLicenseCertification()
+    const data = require("../../utils/data")
+    if (this.data.isGuest) {
+      this.goLogin()
+      return
+    }
+    data.promptLicenseCertification()
   },
 
   previewAttachment(event) {

@@ -23,8 +23,8 @@
     <view class="level-tip-title">权限说明</view>
     <view class="level-tip-row">① 访客：可浏览需求池与资源池（不含发布方与附件）</view>
     <view class="level-tip-row">② 已注册：可收藏、分享、维护资料</view>
-    <view class="level-tip-row">③ 名片认证：可发布需求/资源、申请对接与发起匹配</view>
-    <view class="level-tip-row">④ 执照认证：可查看他人资源附件，并获得优先推荐</view>
+    <view class="level-tip-row">③ 名片认证：可发布需求/资源、申请对接与发起匹配，并查看他人资源附件</view>
+    <view class="level-tip-row">④ 执照认证：获得优先推荐与执照信任标签</view>
   </view>
 
   <view class="button-primary onboard-btn {{submitting ? 'disabled' : ''}}" bindtap="confirmIntent">确认并继续</view>

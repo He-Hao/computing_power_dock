@@ -228,9 +228,9 @@
 
     <view class="card" wx:if="{{attachments.length > 0 || canEditAttachments}}">
       <view class="section-title compact">附件材料</view>
-      <view class="form-tip" wx:if="{{canEditAttachments && record.type === 'resource'}}">审核前可增删附件，保存后生效；他人需完成营业执照认证后可查看。</view>
+      <view class="form-tip" wx:if="{{canEditAttachments && record.type === 'resource'}}">审核前可增删附件，保存后生效；他人需完成名片认证后可查看。</view>
       <view class="form-tip" wx:elif="{{canEditAttachments}}">审核前可增删附件，保存后生效；附件不公开展示。</view>
-      <view class="form-tip" wx:elif="{{record.type === 'resource'}}">附件材料在资源详情中展示，他人需完成营业执照认证后可查看。</view>
+      <view class="form-tip" wx:elif="{{record.type === 'resource'}}">附件材料在资源详情中展示，他人需完成名片认证后可查看。</view>
       <view class="attachment-list">
         <view class="attachment-item" wx:for="{{attachments}}" wx:key="id">
           <view class="attachment-main" bindtap="previewAttachment" data-index="{{index}}">

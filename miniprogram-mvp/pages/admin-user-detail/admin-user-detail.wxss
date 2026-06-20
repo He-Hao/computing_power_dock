@@ -45,3 +45,45 @@
   background: #fff1f0;
   color: #c0392b;
 }
+
+.cert-image-block {
+  margin-top: 16rpx;
+}
+
+.cert-image-label {
+  margin-bottom: 8rpx;
+  color: #68717d;
+  font-size: 24rpx;
+}
+
+.cert-image-loading {
+  margin-bottom: 12rpx;
+  color: #176b5b;
+  font-size: 24rpx;
+}
+
+.cert-image-error {
+  margin-bottom: 12rpx;
+  padding: 16rpx 20rpx;
+  border-radius: 8rpx;
+  background: #fff4ec;
+  color: #8a4f12;
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+.cert-image-missing {
+  padding: 28rpx 24rpx;
+  border-radius: 12rpx;
+  background: #f5f7fa;
+  color: #68717d;
+  font-size: 26rpx;
+  line-height: 1.5;
+}
+
+.cert-image {
+  width: 100%;
+  height: 320rpx;
+  border-radius: 8rpx;
+  background: #eef1f4;
+}

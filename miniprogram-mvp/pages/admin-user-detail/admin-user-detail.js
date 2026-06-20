@@ -3,6 +3,10 @@ Page({
     phone: "",
     user: null,
     detailRows: [],
+    certImages: [],
+    attachments: [],
+    imagesLoading: false,
+    imageResolveError: "",
     loading: false,
     actionLoading: ""
   },
@@ -62,16 +66,20 @@ Page({
     this.setData({ loading: true })
     return data.adminLookupUserAsync(phone).then(function(result) {
       if (!result.ok || !result.user) {
-        this.setData({ user: null, detailRows: [], loading: false })
+        this.setData({
+          user: null,
+          detailRows: [],
+          certImages: [],
+          attachments: [],
+          imagesLoading: false,
+          imageResolveError: "",
+          loading: false
+        })
         wx.showToast({ title: result.message || "未找到用户", icon: "none" })
         return
       }
       var user = adminUserView.enrichAdminUserListItem(result.user)
-      this.setData({
-        user: user,
-        detailRows: user.detailRows || [],
-        loading: false
-      })
+      this.applyUserDetail(user)
     }.bind(this)).catch(function(error) {
       this.setData({ loading: false })
       wx.showToast({ title: error.message || "加载失败", icon: "none" })
@@ -152,6 +160,108 @@ Page({
           this.setData({ actionLoading: "" })
         }.bind(this))
       }.bind(this)
+    })
+  },
+
+  applyUserDetail(user) {
+    const data = require("../../utils/data")
+    const cloudStore = require("../../utils/cloudStore")
+    var certImages = (user && user.certImages) || []
+    var attachments = (user && user.attachments) || []
+    var hasImages = certImages.length > 0 || attachments.length > 0
+    var basePatch = {
+      user: user,
+      detailRows: (user && user.detailRows) || [],
+      loading: false
+    }
+
+    if (!hasImages) {
+      this.setData(Object.assign({}, basePatch, {
+        certImages: [],
+        attachments: [],
+        imagesLoading: false,
+        imageResolveError: ""
+      }))
+      return
+    }
+
+    this.setData(Object.assign({}, basePatch, {
+      certImages: certImages,
+      attachments: attachments,
+      imagesLoading: true,
+      imageResolveError: ""
+    }))
+
+    var resolveOptions = { adminResolve: true }
+    var resolveTasks = []
+    if (certImages.length > 0) {
+      resolveTasks.push(cloudStore.resolveCloudImageUrls(certImages, resolveOptions).then(function(resolved) {
+        return { certImages: resolved }
+      }))
+    }
+    if (attachments.length > 0) {
+      resolveTasks.push(data.resolveSubmissionAttachments(attachments, resolveOptions).then(function(resolved) {
+        return {
+          attachments: resolved.map(function(entry) {
+            return {
+              label: entry.name || entry.label || "附件",
+              url: entry.displayUrl || entry.url,
+              displayUrl: entry.displayUrl || entry.url,
+              fileType: entry.fileType || "file",
+              unavailable: !!entry.unavailable,
+              unavailableHint: entry.unavailableHint || ""
+            }
+          })
+        }
+      }))
+    }
+
+    Promise.all(resolveTasks).then(function(parts) {
+      var patch = {}
+      parts.forEach(function(part) {
+        patch = Object.assign(patch, part)
+      })
+      var unresolved = []
+      ;(patch.certImages || []).concat(patch.attachments || []).forEach(function(imageItem) {
+        if (imageItem && imageItem.unavailable) {
+          unresolved.push(imageItem.label || "图片")
+        }
+      })
+      this.setData({
+        certImages: patch.certImages || certImages,
+        attachments: patch.attachments || attachments,
+        imagesLoading: false,
+        imageResolveError: unresolved.length > 0
+          ? "部分附件未能加载，请确认已部署最新 tradeApi 云函数后重试。"
+          : ""
+      })
+    }.bind(this)).catch(function(error) {
+      this.setData({
+        certImages: certImages,
+        attachments: attachments,
+        imagesLoading: false,
+        imageResolveError: (error && error.message) || "附件加载失败，请重新进入或部署云函数后重试"
+      })
+    }.bind(this))
+  },
+
+  previewUserImage(event) {
+    var url = event.currentTarget.dataset.url
+    if (!url) {
+      return
+    }
+    var urls = (this.data.certImages || []).concat(this.data.attachments || []).filter(function(item) {
+      return item && !item.unavailable && (item.fileType === "image" || !item.fileType) && !!(item.displayUrl || item.url)
+    }).map(function(item) {
+      return item.displayUrl || item.url
+    })
+    if (urls.length === 0) {
+      wx.showToast({ title: "图片暂不可预览", icon: "none" })
+      return
+    }
+    wx.previewImage({
+      current: url,
+      urls: urls
     })
   },
 

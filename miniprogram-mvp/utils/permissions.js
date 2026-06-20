@@ -40,7 +40,8 @@ var unlockedByAccessLevel = {
     cardCert: true,
     submitDemand: true,
     submitResource: true,
-    applyConnect: true
+    applyConnect: true,
+    viewResourceAttachment: true
   },
   verified: {
     browseDemands: true,
@@ -194,14 +195,14 @@ function canShareConnectInviteOnDetail(deps) {
 
 /**
  * 资源附件可见性（见 10_权限规则.md §5.3）
- * 发布方 / 代发运营始终可见；路人需执照；已授权对接方与路人+执照相同。
+ * 发布方 / 代发运营始终可见；路人需名片或执照认证；已授权对接方与路人同口径。
  */
 function canViewResourceAttachmentsForListing(options) {
   options = options || {}
   if (options.isStaffProxyView || options.isPublisher || options.isListingPublisher) {
     return true
   }
-  return !!options.hasLicenseCert
+  return !!(options.hasBusinessCert || options.hasLicenseCert)
 }
 
 /** 需求附件永不公开展示 */

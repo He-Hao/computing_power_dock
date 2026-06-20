@@ -160,6 +160,32 @@ function fetchPublicListingById(listingId, options) {
   })
 }
 
+function fetchListingAttachmentsFromCloud(listingId, options) {
+  options = options || {}
+  if (!isCloudEnabled() || !listingId) {
+    return Promise.resolve({ ok: true, local: true, data: { hasAttachments: false, canView: false, attachments: [] } })
+  }
+  return cloudStore.fetchListingAttachments(listingId, options).then(function(result) {
+    var data = result && result.data ? result.data : null
+    if (data && data.hasAttachments) {
+      var poolKey = isResource(listingId) ? publishedResourcesKey : publishedDemandsKey
+      var pool = wx.getStorageSync(poolKey) || []
+      var patched = false
+      var nextPool = pool.map(function(item) {
+        if (item && item.id === listingId) {
+          patched = true
+          return Object.assign({}, item, { hasAttachments: true })
+        }
+        return item
+      })
+      if (patched) {
+        wx.setStorageSync(poolKey, nextPool)
+      }
+    }
+    return result
+  })
+}
+
 function markPoolNeedsForceRefresh() {
   try {
     var app = getApp()
@@ -5973,6 +5999,88 @@ function adminSearchPublishedListingsAsync(options) {
   })
 }
 
+function buildAdminUserAttachmentsFromLocal(phone) {
+  var certImages = []
+  var attachments = []
+  var certSeen = {}
+  var attachmentSeen = {}
+  var preferredStatuses = ["已认证", "认证中", "待审核", "待平台审核"]
+  var certs = getCertifySubmissions().filter(function(item) {
+    var itemPhone = String(item.phone || item.ownerPhone || "").trim()
+    return itemPhone === phone
+  })
+
+  function pickCertSubmission(certLevel) {
+    var i
+    var j
+    for (i = 0; i < preferredStatuses.length; i += 1) {
+      var status = preferredStatuses[i]
+      for (j = 0; j < certs.length; j += 1) {
+        if (certs[j].certLevel === certLevel && certs[j].status === status) {
+          return certs[j]
+        }
+      }
+    }
+    for (j = 0; j < certs.length; j += 1) {
+      if (certs[j].certLevel === certLevel) {
+        return certs[j]
+      }
+    }
+    return null
+  }
+
+  function pushImageItem(list, label, url, seen) {
+    var normalized = String(url || "").trim()
+    if (!normalized || seen[normalized]) {
+      return
+    }
+    seen[normalized] = true
+    list.push({
+      label: label,
+      url: normalized,
+      fileType: /\.(jpg|jpeg|png|gif|webp|bmp)(\?|$)/i.test(normalized) ? "image" : "file"
+    })
+  }
+
+  var cardCert = pickCertSubmission("card")
+  var licenseCert = pickCertSubmission("license")
+  if (cardCert && cardCert.cardImage) {
+    pushImageItem(certImages, "个人名片", cardCert.cardImage, certSeen)
+  }
+  if (licenseCert && licenseCert.licenseImage) {
+    pushImageItem(certImages, "营业执照", licenseCert.licenseImage, certSeen)
+  }
+  if (licenseCert && licenseCert.cardImage && !cardCert) {
+    pushImageItem(certImages, "个人名片", licenseCert.cardImage, certSeen)
+  }
+
+  getAllSubmissionsRaw().forEach(function(sub) {
+    if (!sub || sub.type === "connect" || sub.type === "certify") {
+      return
+    }
+    var subPhone = String(sub.phone || sub.ownerPhone || "").trim()
+    if (subPhone !== phone) {
+      return
+    }
+    if (!sub.attachments || !sub.attachments.length) {
+      return
+    }
+    sub.attachments.forEach(function(att, idx) {
+      var url = att && (att.url || att.path)
+      if (!url) {
+        return
+      }
+      var label = (sub.title || sub.id || "提交") + " · " + (att.name || ("附件" + (idx + 1)))
+      pushImageItem(attachments, label, url, attachmentSeen)
+    })
+  })
+
+  return {
+    certImages: certImages,
+    attachments: attachments
+  }
+}
+
 function adminLookupUserAsync(phone) {
   if (!isPlatformAdminUser()) {
     return Promise.resolve({ ok: false, message: "仅平台管理员可查询用户" })
@@ -5995,9 +6103,10 @@ function adminLookupUserAsync(phone) {
   if (!profile || profile.phone !== phone) {
     return Promise.resolve({ ok: false, message: "本地模式仅可查询当前登录账号" })
   }
+  var localAttachments = buildAdminUserAttachmentsFromLocal(phone)
   return Promise.resolve({
     ok: true,
-    user: {
+    user: Object.assign({
       phone: profile.phone,
       contact: profile.contact || "",
       company: profile.company || "",
@@ -6007,7 +6116,7 @@ function adminLookupUserAsync(phone) {
       certStatus: profile.certStatus || "",
       certLevel: profile.certLevel || "",
       staffRole: profile.staffRole || ""
-    }
+    }, localAttachments)
   })
 }
 
@@ -8143,7 +8252,8 @@ function rebuildProxySubmissionFromListing(listing) {
     actualOwnerPhone: listing.actualOwnerPhone || listing.ownerPhone || "",
     publishedByStaff: true,
     proxyStaffPhone: listing.proxyStaffPhone || "",
-    proxyStaffOpenid: listing.proxyStaffOpenid || ""
+    proxyStaffOpenid: listing.proxyStaffOpenid || "",
+    attachments: listing.attachments || []
   }
 }
 
@@ -8999,42 +9109,68 @@ function canViewResourceAttachments(options) {
     isStaffProxyView: options.isStaffProxyView,
     isPublisher: options.isPublisher || options.isListingPublisher || options.isOwnListing,
     isListingPublisher: options.isListingPublisher || options.isPublisher || options.isOwnListing,
-    hasLicenseCert: hasLicenseCertification()
+    hasBusinessCert: hasApprovedBusinessCert()
   })
 }
 
 function getListingAttachments(item, options) {
-  if (!item || !item.submissionId) {
+  options = options || {}
+  if (!item) {
     return {
       hasAttachments: false,
       canView: false,
       attachments: []
     }
   }
-  var submission = getSubmission(item.submissionId)
-  var rawAttachments = submission && submission.attachments ? submission.attachments : []
   var canView = canViewResourceAttachments(options)
+  var rawAttachments = []
+  if (item.submissionId) {
+    var submission = getSubmission(item.submissionId)
+    if (submission && submission.attachments && submission.attachments.length) {
+      rawAttachments = submission.attachments
+    }
+  }
+  if (!rawAttachments.length && item.attachments && item.attachments.length) {
+    rawAttachments = item.attachments
+  }
+  var hasAttachments = rawAttachments.length > 0 || item.hasAttachments === true
   return {
-    hasAttachments: rawAttachments.length > 0,
+    hasAttachments: hasAttachments,
     canView: canView,
     attachments: canView ? rawAttachments : []
   }
 }
 
 function promptLicenseCertification() {
+  if (!isUserRegistered()) {
+    wx.showModal({
+      title: "请先登录",
+      content: "登录并完成名片认证后即可查看资源附件。",
+      confirmText: "去登录",
+      cancelText: "取消",
+      success: function(res) {
+        if (res.confirm) {
+          wx.navigateTo({ url: "/pages/login-gate/login-gate" })
+        }
+      }
+    })
+    return
+  }
+  if (hasApprovedBusinessCert()) {
+    return
+  }
   var cert = getLatestCertSubmission()
-  var pending = isCertPending(cert) && cert && cert.certLevel === "license"
+  var pending = isCertPending(cert)
   wx.showModal({
-    title: pending ? "营业执照认证审核中" : "需完成营业执照认证",
+    title: pending ? "名片认证审核中" : "需完成名片认证",
     content: pending
-      ? "你的营业执照认证正在审核，通过后即可查看资源附件。"
-      : "查看资源附件需先完成营业执照认证，审核通过后即可查看。",
+      ? "你的名片认证正在审核，通过后即可查看资源附件。"
+      : "查看资源附件需先完成名片认证，审核通过后即可查看。",
     confirmText: pending ? "查看进度" : "去认证",
     cancelText: "取消",
     success: function(res) {
       if (res.confirm) {
-        var url = pending ? getCertifyPageUrl() : "/pages/certify/certify?level=license"
-        wx.navigateTo({ url: url })
+        wx.navigateTo({ url: getCertifyPageUrl() })
       }
     }
   })
@@ -12157,7 +12293,7 @@ function getUserCertSummary() {
     return Object.assign({}, base, {
       status: "guest",
       statusText: "访客用户",
-      statusHint: "登录后可浏览资源与需求；申请对接、提交需求或发布资源需完成名片认证；营业执照认证通过后可查看资源附件",
+      statusHint: "登录后可浏览资源与需求；申请对接、提交需求或发布资源、查看资源附件均需完成名片认证",
       canCertify: false,
       needRegister: true
     })
@@ -12703,6 +12839,7 @@ module.exports = {
   refreshPublicListings,
   refreshAllPublicListings,
   fetchPublicListingById,
+  fetchListingAttachmentsFromCloud,
   refreshPoolPagesFromCloud,
   ensureOpenidBoundOnLaunch,
   validateDeviceSessionOnLaunch,

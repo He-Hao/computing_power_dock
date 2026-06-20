@@ -143,7 +143,8 @@ assert(!staffProxyDemand.showBottomBar, "代发需求详情不显示底部个人
 
 // §5.3 资源附件
 assert(permissions.canViewResourceAttachmentsForListing({ isPublisher: true }), "发布方可看资源附件")
-assert(!permissions.canViewResourceAttachmentsForListing({ hasLicenseCert: false }), "路人无执照不可看附件")
+assert(!permissions.canViewResourceAttachmentsForListing({}), "路人无认证不可看附件")
+assert(permissions.canViewResourceAttachmentsForListing({ hasBusinessCert: true }), "路人有名片可看附件")
 assert(permissions.canViewResourceAttachmentsForListing({ hasLicenseCert: true }), "路人有执照可看附件")
 assert(permissions.canViewResourceAttachmentsForListing({ isStaffProxyView: true }), "代发运营可看附件")
 

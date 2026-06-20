@@ -83,7 +83,7 @@
       </view>
       <view class="card res-attach-lock" wx:if="{{isResource && hasListingAttachments && !canViewAttachments}}" bindtap="goCertifyForAttachments">
         <text class="res-attach-lock-icon">🔒</text>
-        <text>营业执照认证后可查看配置单等材料</text>
+        <text>名片认证后可查看配置单等材料</text>
       </view>
       <view class="card res-attach-card" wx:elif="{{isResource && hasListingAttachments && listingAttachments.length > 0}}">
         <view class="attachment-list">

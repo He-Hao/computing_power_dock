@@ -10,7 +10,7 @@ var config = require("./config")
 
 var operatorName = config.legalOperatorName || "算力码头运营方"
 var contactEmail = config.legalContactEmail || ""
-var updateDate = config.legalUpdateDate || "2026年06月15日"
+var updateDate = config.legalUpdateDate || "2026年06月18日"
 
 var termsVersion = "v2"
 var privacyVersion = "v1"

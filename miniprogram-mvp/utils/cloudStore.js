@@ -399,6 +399,18 @@ function fetchPublicListing(listingId, options) {
   })
 }
 
+function fetchListingAttachments(listingId, options) {
+  options = options || {}
+  if (!isCloudEnabled() || !listingId) {
+    return Promise.resolve({ ok: true, local: true })
+  }
+  return callTradeApi("getListingAttachments", {
+    listingId: listingId
+  }, {
+    silent: options.silent === true
+  })
+}
+
 function fetchPublicListings(pool, page, pageSize, options) {
   options = options || {}
   if (!isCloudEnabled()) {
@@ -1315,6 +1327,7 @@ module.exports = {
   refreshUserLiteFromCloud: refreshUserLiteFromCloud,
   refreshFromCloudSilent: refreshFromCloudSilent,
   fetchPublicListing: fetchPublicListing,
+  fetchListingAttachments: fetchListingAttachments,
   fetchPublicListings: fetchPublicListings,
   fetchBothPublicListings: fetchBothPublicListings,
   fetchBothPublicListingsSilent: fetchBothPublicListingsSilent,

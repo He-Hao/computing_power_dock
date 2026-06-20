@@ -23,6 +23,32 @@
     </view>
   </view>
 
+  <view class="card" wx:if="{{certImages.length > 0}}">
+    <view class="section-title compact">认证材料</view>
+    <view class="cert-image-loading" wx:if="{{imagesLoading}}">正在加载认证图片…</view>
+    <view class="cert-image-error" wx:if="{{imageResolveError}}" bindtap="loadUser">{{imageResolveError}} 点击重试</view>
+    <view class="cert-image-block" wx:for="{{certImages}}" wx:key="label">
+      <view class="cert-image-label">{{item.label}}</view>
+      <image wx:if="{{!item.unavailable && (item.displayUrl || item.url)}}" class="cert-image" src="{{item.displayUrl || item.url}}" mode="aspectFill" bindtap="previewUserImage" data-url="{{item.displayUrl || item.url}}" />
+      <view class="cert-image-missing" wx:else>{{item.unavailableHint || '认证图片未上传至云端'}}</view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{attachments.length > 0}}">
+    <view class="section-title compact">提交附件</view>
+    <view class="cert-image-loading" wx:if="{{imagesLoading}}">正在加载附件图片…</view>
+    <view class="cert-image-error" wx:if="{{imageResolveError}}" bindtap="loadUser">{{imageResolveError}} 点击重试</view>
+    <view class="cert-image-block" wx:for="{{attachments}}" wx:key="label">
+      <view class="cert-image-label">{{item.label}}</view>
+      <image wx:if="{{item.fileType === 'image' && !item.unavailable && (item.displayUrl || item.url)}}" class="cert-image" src="{{item.displayUrl || item.url}}" mode="aspectFill" bindtap="previewUserImage" data-url="{{item.displayUrl || item.url}}" />
+      <view class="cert-image-missing" wx:elif="{{item.fileType === 'image' && item.unavailable}}">{{item.unavailableHint || '图片暂不可查看'}}</view>
+      <view class="gov-user-row" wx:else>
+        <text class="gov-user-label">文件</text>
+        <text class="gov-user-value">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
   <view class="card user-action-card">
     <view class="section-title compact">账号操作</view>
     <view class="gov-item-actions">

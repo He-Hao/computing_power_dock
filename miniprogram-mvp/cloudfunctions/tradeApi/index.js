@@ -2015,6 +2015,9 @@ function normalizeListingForResponse(item, pool) {
   if (!copy.matchScore) {
     copy.matchScore = computeListingQualityScore(copy)
   }
+  if (copy.hasAttachments !== true && copy.attachments && copy.attachments.length > 0) {
+    copy.hasAttachments = true
+  }
   return copy
 }
 
@@ -2162,6 +2165,79 @@ async function collectVisibleListings(pool, filters, openid, targetCount) {
     items: matched,
     truncated: truncated,
     hasMore: hasMore
+  }
+}
+
+async function canViewerSeeListingAttachmentsCloud(listing, viewer, openid) {
+  if (!listing) {
+    return false
+  }
+  if (openid && listing.ownerOpenid && listing.ownerOpenid === openid) {
+    return true
+  }
+  if (viewer && viewer.phone) {
+    var ownerPhone = listing.actualOwnerPhone || listing.ownerPhone || ""
+    if (ownerPhone && ownerPhone === viewer.phone) {
+      return true
+    }
+    if (listing.ownerOpenid && viewer.openid && listing.ownerOpenid === viewer.openid) {
+      return true
+    }
+  }
+  if (listing.publishedByStaff) {
+    if (openid && listing.proxyStaffOpenid && listing.proxyStaffOpenid === openid) {
+      return true
+    }
+    if (viewer && viewer.phone && listing.proxyStaffPhone && listing.proxyStaffPhone === viewer.phone) {
+      return true
+    }
+  }
+  if (viewer && viewer.certStatus === "verified"
+    && (viewer.certLevel === "license" || viewer.certLevel === "card")) {
+    return true
+  }
+  return false
+}
+
+async function getListingAttachments(payload, openid) {
+  payload = payload || {}
+  var listingId = String(payload.listingId || payload.id || "").trim()
+  if (!listingId) {
+    return { ok: false, message: "缺少商机编号" }
+  }
+  if (!isResourceId(listingId)) {
+    return { ok: false, message: "需求商机附件不公开展示" }
+  }
+  var listing = await getListingById(listingId)
+  if (!listing) {
+    return { ok: false, message: "商机不存在" }
+  }
+  if (listing.verification === "待审核") {
+    return { ok: false, message: "商机未发布" }
+  }
+  if (listing.publicDisplay === false) {
+    return { ok: false, message: "商机已隐藏" }
+  }
+  var viewer = openid ? await resolveSessionUser(openid, {}) : null
+  if (await shouldExcludeListingForViewer(listing, viewer)) {
+    return { ok: false, message: "商机不存在" }
+  }
+  var rawAttachments = []
+  if (listing.submissionId) {
+    var submission = await getSubmissionById(listing.submissionId)
+    if (submission && submission.attachments && submission.attachments.length) {
+      rawAttachments = submission.attachments
+    }
+  }
+  var hasAttachments = rawAttachments.length > 0 || listing.hasAttachments === true
+  var canView = hasAttachments && await canViewerSeeListingAttachmentsCloud(listing, viewer, openid)
+  return {
+    ok: true,
+    data: {
+      hasAttachments: hasAttachments,
+      canView: canView,
+      attachments: canView ? rawAttachments : []
+    }
   }
 }
 
@@ -2509,6 +2585,133 @@ async function adminSearchPublishedListings(openid, payload) {
   }
 }
 
+function pushAdminUserImageItem(list, label, url, seen) {
+  var normalized = String(url || "").trim()
+  if (!normalized || seen[normalized]) {
+    return
+  }
+  seen[normalized] = true
+  list.push({
+    label: label,
+    url: normalized,
+    fileType: isCloudImageFileId(normalized) || /\.(jpg|jpeg|png|gif|webp|bmp)(\?|$)/i.test(normalized) ? "image" : "file"
+  })
+}
+
+function pickAdminUserCertSubmission(certs, certLevel, preferredStatuses) {
+  var i
+  var j
+  for (i = 0; i < preferredStatuses.length; i += 1) {
+    var status = preferredStatuses[i]
+    for (j = 0; j < certs.length; j += 1) {
+      if (certs[j].certLevel === certLevel && certs[j].status === status) {
+        return certs[j]
+      }
+    }
+  }
+  for (j = 0; j < certs.length; j += 1) {
+    if (certs[j].certLevel === certLevel) {
+      return certs[j]
+    }
+  }
+  return null
+}
+
+async function fetchAdminUserAttachmentPayload(phone, user) {
+  var certImages = []
+  var attachments = []
+  var certSeen = {}
+  var attachmentSeen = {}
+  var preferredStatuses = ["已认证", "认证中", "待审核", "待平台审核"]
+  var certs = []
+
+  try {
+    var certRes = await db.collection(COL_SUBMISSIONS).where({
+      type: "certify",
+      ownerPhone: phone
+    }).limit(30).get()
+    certs = certRes.data || []
+  } catch (certErr) {
+    console.warn("fetchAdminUserAttachmentPayload certify by phone failed", certErr)
+  }
+
+  if (!certs.length && user && user.openid) {
+    try {
+      var certResByOpenid = await db.collection(COL_SUBMISSIONS).where({
+        type: "certify",
+        ownerOpenid: user.openid
+      }).limit(30).get()
+      certs = certResByOpenid.data || []
+    } catch (certOpenidErr) {
+      console.warn("fetchAdminUserAttachmentPayload certify by openid failed", certOpenidErr)
+    }
+  }
+
+  var cardCert = pickAdminUserCertSubmission(certs, "card", preferredStatuses)
+  var licenseCert = pickAdminUserCertSubmission(certs, "license", preferredStatuses)
+  if (cardCert && cardCert.cardImage) {
+    pushAdminUserImageItem(certImages, "个人名片", cardCert.cardImage, certSeen)
+  }
+  if (licenseCert && licenseCert.licenseImage) {
+    pushAdminUserImageItem(certImages, "营业执照", licenseCert.licenseImage, certSeen)
+  }
+  if (licenseCert && licenseCert.cardImage && !cardCert) {
+    pushAdminUserImageItem(certImages, "个人名片", licenseCert.cardImage, certSeen)
+  }
+
+  var submissionRows = []
+  try {
+    var subRes = await db.collection(COL_SUBMISSIONS).where({
+      ownerPhone: phone,
+      type: _.neq("connect")
+    }).field({
+      id: true,
+      type: true,
+      title: true,
+      attachments: true
+    }).limit(50).get()
+    submissionRows = subRes.data || []
+  } catch (subErr) {
+    console.warn("fetchAdminUserAttachmentPayload submissions by phone failed", subErr)
+  }
+
+  if (!submissionRows.length && user && user.openid) {
+    try {
+      var subResByOpenid = await db.collection(COL_SUBMISSIONS).where({
+        ownerOpenid: user.openid,
+        type: _.neq("connect")
+      }).field({
+        id: true,
+        type: true,
+        title: true,
+        attachments: true
+      }).limit(50).get()
+      submissionRows = subResByOpenid.data || []
+    } catch (subOpenidErr) {
+      console.warn("fetchAdminUserAttachmentPayload submissions by openid failed", subOpenidErr)
+    }
+  }
+
+  submissionRows.forEach(function(sub) {
+    if (!sub || sub.type === "certify" || !sub.attachments || !sub.attachments.length) {
+      return
+    }
+    sub.attachments.forEach(function(att, idx) {
+      var url = att && (att.url || att.path)
+      if (!url) {
+        return
+      }
+      var label = (sub.title || sub.id || "提交") + " · " + (att.name || ("附件" + (idx + 1)))
+      pushAdminUserImageItem(attachments, label, url, attachmentSeen)
+    })
+  })
+
+  return {
+    certImages: certImages,
+    attachments: attachments
+  }
+}
+
 async function adminLookupUser(openid, payload) {
   var admin = await verifyPlatformAdminAccess(openid)
   if (!admin) {
@@ -2523,10 +2726,12 @@ async function adminLookupUser(openid, payload) {
     return { ok: false, message: "未找到该手机号对应的账号" }
   }
   var rows = await attachAdminUserActivityStats([mapAdminUserListRow(user)])
+  var mappedUser = rows[0] || mapAdminUserListRow(user)
+  var attachmentPayload = await fetchAdminUserAttachmentPayload(phone, user)
   return {
     ok: true,
     data: {
-      user: rows[0] || mapAdminUserListRow(user)
+      user: Object.assign({}, mappedUser, attachmentPayload)
     }
   }
 }
@@ -3785,6 +3990,7 @@ async function createSubmission(openid, payload) {
       submission.reviewResult = "通过"
       await saveSubmissionDoc(submission)
     }
+    listing.hasAttachments = !!(submission.attachments && submission.attachments.length)
     await saveListingDoc(listing)
   }
 
@@ -3866,6 +4072,7 @@ async function adminProxyPublish(staffOpenid, payload) {
       submission.reviewResult = "通过"
       await saveSubmissionDoc(submission)
     }
+    listing.hasAttachments = !!(submission.attachments && submission.attachments.length)
     await saveListingDoc(listing)
   }
 
@@ -5438,7 +5645,8 @@ exports.main = async function(event) {
 
   var guestPublicActions = {
     listListings: true,
-    getPublicListing: true
+    getPublicListing: true,
+    getListingAttachments: true
   }
   if (!openid && !guestPublicActions[action]) {
     return { ok: false, message: "未获取到用户身份，请重新打开小程序" }
@@ -5452,6 +5660,8 @@ exports.main = async function(event) {
         return await listListings(payload, openid || "")
       case "getPublicListing":
         return await getPublicListing(payload, openid || "")
+      case "getListingAttachments":
+        return await getListingAttachments(payload, openid || "")
       case "adminSync":
         return await adminSync(openid, payload)
       case "staffWorkbenchSync":
